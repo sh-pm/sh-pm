@@ -50,7 +50,7 @@ your_project_folder
 ## How to use functions in dependencies
 
 You can use functions inside dependencies with "include's" in start of .sh file:
-Ex: if you go use log's, exist's a dependency called **sh-logger**
+Example: Supose you go use log's, exists a dependency called **sh-logger**
 
 1) Open pom.sh and insert dependency: 
 ```
@@ -72,18 +72,13 @@ $ ./shpm.sh update
 The command will download and extract dependency to local sh-pm repository located in $ROOT_FOLDER_PATH/src/sh/lib
 
 3) Include dependency in file(s)
-
+Example:
 ```
 #!/bin/bash
+source ../../../bootstrap.sh
 
-source ../../../bootstrap.sh                           #<-------- MANDATORY INCLUDE
+source $LIB_DIR_PATH/sh_logger/sh_logger.sh            
 
-source $LIB_DIR_PATH/sh_logger/sh_logger.sh            #
-source $LIB_DIR_PATH/sh_commons/shell_util.sh          # <------- THIS IS "INCLUDE's" OF DEPENDENCIES FILES
-source $LIB_DIR_PATH/sh_boolean_utils/boolean_util.sh  #
-
-#------------
-YOUR SH CODE HERE
-#------------
-
+#YOUR SH CODE HERE
+log_info "Work's fine!"
 ```
