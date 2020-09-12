@@ -8,5 +8,6 @@ declare -A REPOSITORY=( \
 );
 
 declare -A DEPENDENCIES=( \
-	[sh_logger]=v1.2.0 
+    [sh_pm]=v2.2.0
+	[sh_logger]=v1.3.0 \
 );

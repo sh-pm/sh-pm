@@ -19,6 +19,7 @@ print_help() {
     echo "  test                  Run tests in $TEST_DIR_SUBPATH folder"
     echo "  build                 Create compressed file in $TARGET_DIR_PATH folder"        
     echo "  publish               Publish compressed sh in repository"
+    echo "  autoupdate            Update itself"
 	echo ""
 	echo "EXAMPLES:"
 	echo "  ./shpm update"
@@ -35,6 +36,7 @@ run_sh_pm() {
 	local TEST=false
 	local BUILD=false
 	local PUBLISH=false
+	local AUTOUPDATE=false
 	
 	if [ $# -eq 0 ];  then
 		print_help
@@ -57,7 +59,11 @@ run_sh_pm() {
 			
 			if [[ "$ARG" == "publish" ]];  then
 				PUBLISH="true"
-			fi		
+			fi
+			
+			if [[ "$ARG" == "autoupdate" ]];  then
+				AUTOUPDATE="true"
+			fi				
 		done
 	fi
 	
@@ -77,6 +83,10 @@ run_sh_pm() {
 	if [[ "$PUBLISH" == "true" ]];  then	
 		publish_release
 	fi
+	
+	if [[ "$AUTOUPDATE" == "true" ]];  then	
+		auto_update
+	fi
 }
 
 update_dependencies() {
@@ -86,15 +96,27 @@ update_dependencies() {
 			
 	for DEP_ARTIFACT_ID in "${!DEPENDENCIES[@]}"; do 
 	
+		update_dependency $DEP_ARTIFACT_ID
+		
+	done
+	
+	cd $ROOT_DIR_PATH
+
+}
+
+update_dependency() {
+
+        local DEP_ARTIFACT_ID=$1
+
 		DEP_VERSION="${DEPENDENCIES[$DEP_ARTIFACT_ID]}"		
 		
 		if [[ ! -d $LIB_DIR_PATH ]]; then
 		  mkdir -p $LIB_DIR_PATH
 		fi
 		
-		DEP_FILENAME=$DEP_ARTIFACT_ID".tar.gz"
+		DEP_FILENAME=$DEP_ARTIFACT_ID"-"$DEP_VERSION".tar.gz"
 		
-		echo "curl  http://$HOST:$PORT/sh-archiva/get/snapshot/$GROUP_ID/$DEP_ARTIFACT_ID/$DEP_VERSION"
+		echo "http://$HOST:$PORT/sh-archiva/get/snapshot/$GROUP_ID/$DEP_ARTIFACT_ID/$DEP_VERSION > $LIB_DIR_PATH/$DEP_FILENAME"
 		curl  http://$HOST:$PORT/sh-archiva/get/snapshot/$GROUP_ID/$DEP_ARTIFACT_ID/$DEP_VERSION > $LIB_DIR_PATH/$DEP_FILENAME
 		
 		cd $LIB_DIR_PATH/
@@ -110,9 +132,19 @@ update_dependencies() {
 		
 		rm -f $DEP_FILENAME
 		
-	done
-	
-	cd $ROOT_DIR_PATH
+		# if update a sh-pm
+		if [[ "$DEP_ARTIFACT_ID" == "sh-pm" ]]; then
+	        
+	        if [[ -f $ROOT_DIR_PATH/shpm.sh ]]; then
+	        	if [[ ! -d $ROOT_DIR_PATH/tmpoldshpm ]]; then
+		        	mkdir $ROOT_DIR_PATH/tmpoldshpm		
+				fi
+	        	mv $ROOT_DIR_PATH/shpm.sh $ROOT_DIR_PATH/tmpoldshpm
+	        fi
+	        
+	        TARGET_FOLDER=$ARTIFACT_ID"-"$VERSION
+	        cp $LIB_DIR_PATH/$TARGET_FOLDER/shpm.sh	$ROOT_DIR_PATH
+		fi
 
 }
 
@@ -186,6 +218,35 @@ run_all_tests() {
 	done
 	
 	cd $ROOT_DIR_PATH
+}
+
+auto_update() {
+
+    local HOST=${REPOSITORY[host]}
+	local PORT=${REPOSITORY[port]}	
+	
+	for DEP_ARTIFACT_ID in "${!DEPENDENCIES[@]}"; do 
+	
+	    if [[ "$DEP_ARTIFACT_ID" == "sh-pm" ]]; then		
+			
+			echo "Updating sh-pm ..."
+			
+			update_dependency $DEP_ARTIFACT_ID
+	        
+	        if [[ ! -d $ROOT_DIR_PATH/tmpoldshpm ]]; then
+		        mkdir $ROOT_DIR_PATH/tmpoldshpm		
+			fi
+	        mv $ROOT_DIR_PATH/shpm.sh $ROOT_DIR_PATH/tmpoldshpm
+	        
+	        TARGET_FOLDER=$ARTIFACT_ID"-"$VERSION
+	        cp $LIB_DIR_PATH/$TARGET_FOLDER/shpm.sh	$ROOT_DIR_PATH
+	        
+	        exit 0    
+	    fi
+	done
+	
+	echo "Could not update sh-pm: sh-pm not present in dependencies of pom.sh"
+	exit 1
 }
 
 
