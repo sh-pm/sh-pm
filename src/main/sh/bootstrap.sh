@@ -1,7 +1,7 @@
 #!/bin/bash
 
 debug_var() {
-	local ENABLE_DEBUG="true"
+	local ENABLE_DEBUG="false"
 	if [[ "$ENABLE_DEBUG" == "true" ]]; then
 		echo $1
 	fi
