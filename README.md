@@ -1,7 +1,8 @@
-# sh-pm
+## sh-pm
 Shell Scripts Package Manager
 
-## Install in your project
+
+### How to install in your project
 
 - Go to sh-pm site
 - Download sh-pm tar.gz
@@ -9,20 +10,8 @@ Shell Scripts Package Manager
   - **bootstrap.sh** 
   - **pom.sh**
   - **shpm.sh**
-  
-## The three files:
-### bootstrap.sh
-Create environment variables to help stardardize path's
-  
-### pom.sh
-Define: 
-- Group and version of your script(s) application
-- Dependencies to be downloaded via shpm for use in you script(s)
 
-### shpm.sh
-The shell script package manager "executable"
-
-## Expected folder structure
+### Expected folder structure
 shpm expected a folder structure to be create to organize your script(s)
 ```
 your_project_folder
@@ -47,7 +36,7 @@ your_project_folder
    bootstrap.sh
 ```
 
-## How to use functions in dependencies
+### How to use functions in dependencies
 
 You can use functions inside dependencies with "include's" in start of .sh file:
 Example: Supose you go use log's, exists a dependency called **sh-logger**
@@ -82,3 +71,15 @@ source $LIB_DIR_PATH/sh_logger/sh_logger.sh
 #YOUR SH CODE HERE
 log_info "Work's fine!"
 ```
+
+### The three files of sh-pm:
+* bootstrap.sh
+Create environment variables to help stardardize path's
+  
+* pom.sh
+Define: 
+- Group and version of your script(s) application
+- Dependencies to be downloaded via shpm for use in you script(s)
+
+* shpm.sh
+The shell script package manager "executable"
