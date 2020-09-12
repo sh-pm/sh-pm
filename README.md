@@ -75,7 +75,7 @@ The command will download and extract dependency to local sh-pm repository locat
 Example:
 ```
 #!/bin/bash
-source ../../../bootstrap.sh
+source ./bootstrap.sh
 
 source $LIB_DIR_PATH/sh_logger/sh_logger.sh            
 
