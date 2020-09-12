@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ./bootstrap.sh  
+source ../../../bootstrap.sh  
 
 source $ROOT_DIR_PATH/pom.sh
 
@@ -123,34 +123,44 @@ build_release() {
 
 	rm -rf ./target
 	
-	if [[ ! -d $TARGET_DIR_PATH/$VERSION/$ARTIFACT_ID ]]; then
-		mkdir -p $TARGET_DIR_PATH/$VERSION/$ARTIFACT_ID 
-	fi
+	TARGET_FOLDER=$ARTIFACT_ID"-"$VERSION
 	
-	cp -R $SRC_DIR_PATH/* $TARGET_DIR_PATH/$VERSION/$ARTIFACT_ID
+	if [[ ! -d $TARGET_DIR_PATH/$TARGET_FOLDER ]]; then
+		mkdir -p $TARGET_DIR_PATH/$TARGET_FOLDER 
+	fi
+
+	cp -R $SRC_DIR_PATH/* $TARGET_DIR_PATH/$TARGET_FOLDER
 	
 	# if not build itself
-	if [[ ! -f $TARGET_DIR_PATH/$VERSION/$ARTIFACT_ID/"shpm.sh" ]]; then
-		cp $ROOT_DIR_PATH/pom.sh $TARGET_DIR_PATH/$VERSION/$ARTIFACT_ID
+	if [[ ! -f $TARGET_DIR_PATH/$TARGET_FOLDER/"shpm.sh" ]]; then
+		cp $ROOT_DIR_PATH/pom.sh $TARGET_DIR_PATH/$TARGET_FOLDER
 	else 
-	    cp $SRC_DIR_PATH/../resources/template_pom.sh $TARGET_DIR_PATH/$VERSION/$ARTIFACT_ID/pom.sh
+	    cp $SRC_DIR_PATH/../resources/template_pom.sh $TARGET_DIR_PATH/$TARGET_FOLDER/pom.sh
 	fi
 	
-	cd $TARGET_DIR_PATH/$VERSION/$ARTIFACT_ID
+	cd $TARGET_DIR_PATH
+	cp $ROOT_DIR_PATH/bootstrap.sh $TARGET_DIR_PATH/$TARGET_FOLDER
 	
-	sed -i 's/\#\!\/bin\/bash/\#\!\/bin\/bash\n# '$VERSION' - Build with shpm/g' *.sh
+	cd $TARGET_DIR_PATH/$TARGET_FOLDER
+	
+	sed -i 's/\#\!\/bin\/bash/\#\!\/bin\/bash\n# '$VERSION' - Build with sh-pm/g' *.sh
 		
 	# if not build itself
-	if [[ ! -f $TARGET_DIR_PATH/$VERSION/$ARTIFACT_ID/"shpm.sh" ]]; then
-		rm $BOOTSTRAP_FILENAME
+	if [[ ! -f $TARGET_DIR_PATH/$TARGET_FOLDER/"shpm.sh" ]]; then
 		sed -i 's/source \.\/bootstrap.sh//g' *.sh		
-		sed -i 's/source \.\.\/\.\.\/\.\.\/bootstrap.sh//g' *.sh	
+		sed -i 's/source \.\.\/\.\.\/\.\.\/bootstrap.sh//g' *.sh
+	else
+	   	sed -i 's/source \.\.\/\.\.\/\.\.\/bootstrap.sh/source \.\/bootstrap.sh/g' shpm.sh
 	fi
-	 	
 	
-	cd $TARGET_DIR_PATH/$VERSION
+	cd $TARGET_DIR_PATH
+	cp $ROOT_DIR_PATH/bootstrap.sh $TARGET_DIR_PATH/$TARGET_FOLDER
 	
-	tar -cvzf $ARTIFACT_ID".tar.gz" $ARTIFACT_ID
+	tar -cvzf $TARGET_FOLDER".tar.gz" $TARGET_FOLDER
+	
+	if [[ -d $TARGET_DIR_PATH/$TARGET_FOLDER ]]; then
+		rm -rf $TARGET_DIR_PATH/$TARGET_FOLDER	
+	fi
 	
 	cd $ROOT_DIR_PATH
 
@@ -161,7 +171,8 @@ publish_release() {
 	local HOST=${REPOSITORY[host]}
 	local PORT=${REPOSITORY[port]}	
 
-	FILE_PATH=$TARGET_DIR_PATH/$VERSION/$ARTIFACT_ID".tar.gz" 
+	TARGET_FOLDER=$ARTIFACT_ID"-"$VERSION
+	FILE_PATH=$TARGET_DIR_PATH/$TARGET_FOLDER".tar.gz" 
 	
 	curl -F file=@"$FILE_PATH" http://$HOST:$PORT/sh-archiva/snapshot/$GROUP_ID/$ARTIFACT_ID/$VERSION
 }

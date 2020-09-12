@@ -16,7 +16,7 @@ fi
 if [[ -z $ROOT_DIR_PATH ]]; then
 	THIS_SCRIPT_PATH=$( dirname $(realpath "${BASH_SOURCE[0]}}") )
 	ROOT_DIR_PATH=${THIS_SCRIPT_PATH//$SRC_DIR_SUBPATH/}		
-    debug_var "ROOT_DIR_PATH: $ROOT_DIR_PATH"
+	debug_var "ROOT_DIR_PATH: $ROOT_DIR_PATH"
 fi
 
 if [[ -z $SRC_DIR_PATH ]]; then
