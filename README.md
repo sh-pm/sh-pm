@@ -1,40 +1,17 @@
 ## sh-pm
 Shell Scripts Package Manager
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/sh-pm-architecture.png" />
+</p>
 
 ### How to install in your project
 
-- Go to sh-pm site
 - Download sh-pm tar.gz
 - Extract files below to root folder of your project
   - **bootstrap.sh** 
   - **pom.sh**
   - **shpm.sh**
-
-### Expected folder structure
-shpm expected a folder structure to be create to organize your script(s)
-```
-your_project_folder
-   \src
-      \main
-         \lib
-      \sh
-         your_script1.sh
-         your_script2.sh
-         your_script3.sh
-         \subfolder
-            your_script4.sh
-            your_script5.sh
-         ...
-         your_scriptN.sh
-      \resources
-  
-   \target
-      your_project_folder-VERSION.tar.gz
-   pom.sh
-   shpm.sh
-   bootstrap.sh
-```
 
 ### How to use functions in dependencies
 
@@ -83,3 +60,28 @@ Define:
 
 * shpm.sh
 The shell script package manager "executable"
+
+### Expected folder structure
+shpm expected a folder structure to be create to organize your script(s)
+```
+your_project_folder
+   \src
+      \main
+         \lib
+      \sh
+         your_script1.sh
+         your_script2.sh
+         your_script3.sh
+         \subfolder
+            your_script4.sh
+            your_script5.sh
+         ...
+         your_scriptN.sh
+      \resources
+  
+   \target
+      your_project_folder-VERSION.tar.gz
+   pom.sh
+   shpm.sh
+   bootstrap.sh
+```
