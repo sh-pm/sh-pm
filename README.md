@@ -13,12 +13,12 @@ Shell Scripts Package Manager
   - **pom.sh**
   - **shpm.sh**
 
-### How to use functions in dependencies
+### How to reuse code
 
 You can use functions inside dependencies with "include's" in start of .sh file:
 Example: Supose you go use log's, exists a dependency called **sh-logger**
 
-1) Open pom.sh and insert dependency: 
+1) Open pom.sh and insert dependency lib containg reusable code: 
 ```
 
 (...)
@@ -31,22 +31,22 @@ declare -A DEPENDENCIES=( \
 
 ```
 
-2) Run shpm update to download dependency from sh-archiva
+2) Run shpm update to download dependency lib with reusable code from sh-archiva
 ```
 $ ./shpm.sh update
 ```
 The command will download and extract dependency to local sh-pm repository located in $ROOT_FOLDER_PATH/src/sh/lib
 
-3) Include dependency in file(s)
+3) Include dependency lib in file(s) and use reusable code
 Example:
 ```
 #!/bin/bash
 source ./bootstrap.sh
 
-include_lib sh_logger
+include_lib sh-logger
 
 #YOUR SH CODE HERE
-log_info "Work's fine!"
+log_info "Work's fine!" # log_info is a reusable function inside sh-logger lib
 ```
 
 ### The three files of sh-pm:
