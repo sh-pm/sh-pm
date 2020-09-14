@@ -7,7 +7,7 @@ declare -A REPOSITORY=( \
 	[port]=49156 \
 );
 
-declare -A DEPENDENCIES=( \
+declare -rA DEPENDENCIES=( \
     [sh_pm]=v2.2.0
 	[sh_logger]=v1.3.0 \
 );
