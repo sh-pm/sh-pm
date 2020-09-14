@@ -86,3 +86,13 @@ your_project_folder
    shpm.sh
    bootstrap.sh
 ```
+
+# WARNING
+## "Boolean values":
+  * TRUE=0
+  * FALSE=1
+
+## Dependencies: 
+Even though several scripts refer to several different versions of the same lib, **only one version is used: the version that is in the project's _pom.sh_**.
+
+**Reason**: if several different versions are loaded, and certain functions and / or variables exist in more than one version, the environment is only valid for what was defined in the last load. The definitions of variables and functions of previously loaded versions will be overwritten by the most recent uploads and this can cause unpredictable behavior.
