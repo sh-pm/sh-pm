@@ -1,5 +1,4 @@
 #!/bin/bash
-# v3.0.1 - Build with sh-pm
 
 # =================================
 # Internal Log
@@ -133,7 +132,7 @@ function include_file () {
 	# Validate include
 	# Include file only one time
 	if [[ ! -z "${FILES_INCLUDED[$FILEPATH_TO_INCLUDE]}" ]]; then
-		echo "$FILEPATH_TO_INCLUDE already included."
+		internal_debug "$FILEPATH_TO_INCLUDE already included."
 	else 
 		source $FILEPATH_TO_INCLUDE
 		

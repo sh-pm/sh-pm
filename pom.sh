@@ -1,6 +1,6 @@
 GROUP_ID=bash
 ARTIFACT_ID=sh-pm
-VERSION=v3.0.1
+VERSION=v3.0.3
 
 declare -A REPOSITORY=( \
 	[host]="li1299-135.members.linode.com" \

@@ -266,14 +266,12 @@ build_release() {
 	cp -R $SRC_DIR_PATH/* $TARGET_DIR_PATH/$TARGET_FOLDER
 	
 	# if not build itself
-	if [[ ! -f $TARGET_DIR_PATH/$TARGET_FOLDER/"shpm.sh" ]]; then
+	if [[ ! -f $SRC_DIR_PATH/"shpm.sh" ]]; then
 		cp $ROOT_DIR_PATH/pom.sh $TARGET_DIR_PATH/$TARGET_FOLDER
 	else 
 	    cp $SRC_DIR_PATH/../resources/template_pom.sh $TARGET_DIR_PATH/$TARGET_FOLDER/pom.sh
+    	cp $ROOT_DIR_PATH/bootstrap.sh $TARGET_DIR_PATH/$TARGET_FOLDER
 	fi
-	
-	cd $TARGET_DIR_PATH
-	cp $ROOT_DIR_PATH/bootstrap.sh $TARGET_DIR_PATH/$TARGET_FOLDER
 	
 	cd $TARGET_DIR_PATH/$TARGET_FOLDER
 	
@@ -284,14 +282,10 @@ build_release() {
 		sed -i 's/source \.\/bootstrap.sh//g' *.sh		
 		sed -i 's/source \.\.\/\.\.\/\.\.\/bootstrap.sh//g' *.sh
 	else
-	   	sed -i 's/source \.\.\/\.\.\/\.\.\/bootstrap.sh/source \.\/bootstrap.sh/g' shpm.sh
-	   	
-	   	cd $ROOT_DIR_PATH
-	   	sed -i 's/\#\!\/bin\/bash/\#\!\/bin\/bash\n# '$VERSION' - Build with sh-pm/g' *.sh
+	   	sed -i 's/source \.\.\/\.\.\/\.\.\/bootstrap.sh/source \.\/bootstrap.sh/g' shpm.sh	   	
 	fi
 	
 	cd $TARGET_DIR_PATH
-	cp $ROOT_DIR_PATH/bootstrap.sh $TARGET_DIR_PATH/$TARGET_FOLDER
 	
 	tar -czf $TARGET_FOLDER".tar.gz" $TARGET_FOLDER
 	
