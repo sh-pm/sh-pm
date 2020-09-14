@@ -13,52 +13,53 @@ Shell Scripts Package Manager
   - **pom.sh**
   - **shpm.sh**
 
-### How to use functions in dependencies
+### How to reuse code
 
-You can use functions inside dependencies with "include's" in start of .sh file:
-Example: Supose you go use log's, exists a dependency called **sh-logger**
+You can use functions inside dependencies by use "include's" in start of .sh file:
+#### Example: 
+Supose you go use log's, exists a dependency called **sh-logger**
 
-1) Open pom.sh and insert dependency: 
+1) Open pom.sh and insert dependency lib containg reusable code: 
 ```
 
 (...)
 
 declare -A DEPENDENCIES=( \
-	[sh_logger]=v1.2.0 
+	[sh_logger]=v1.3.0 
 );
 
 (...)
 
 ```
 
-2) Run shpm update to download dependency from sh-archiva
+2) Run shpm update to download dependency lib with reusable code from sh-archiva
 ```
 $ ./shpm.sh update
 ```
 The command will download and extract dependency to local sh-pm repository located in $ROOT_FOLDER_PATH/src/sh/lib
 
-3) Include dependency in file(s)
+3) Include dependency lib in file(s) and use reusable code
 Example:
 ```
 #!/bin/bash
 source ./bootstrap.sh
 
-source $LIB_DIR_PATH/sh_logger/sh_logger.sh            
+include_lib sh-logger
 
 #YOUR SH CODE HERE
-log_info "Work's fine!"
+log_info "Work's fine!" # log_info is a reusable function inside sh-logger lib
 ```
 
 ### The three files of sh-pm:
-* bootstrap.sh
+#### bootstrap.sh
 Create environment variables to help stardardize path's
   
-* pom.sh
+#### pom.sh
 Define: 
 - Group and version of your script(s) application
 - Dependencies to be downloaded via shpm for use in you script(s)
 
-* shpm.sh
+#### shpm.sh
 The shell script package manager "executable"
 
 ### Expected folder structure
