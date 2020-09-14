@@ -24,7 +24,7 @@ Example: Supose you go use log's, exists a dependency called **sh-logger**
 (...)
 
 declare -A DEPENDENCIES=( \
-	[sh_logger]=v1.2.0 
+	[sh_logger]=v1.3.0 
 );
 
 (...)
@@ -43,7 +43,7 @@ Example:
 #!/bin/bash
 source ./bootstrap.sh
 
-source $LIB_DIR_PATH/sh_logger/sh_logger.sh            
+include_lib sh_logger
 
 #YOUR SH CODE HERE
 log_info "Work's fine!"
