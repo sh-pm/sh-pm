@@ -15,8 +15,9 @@ Shell Scripts Package Manager
 
 ### How to reuse code
 
-You can use functions inside dependencies with "include's" in start of .sh file:
-Example: Supose you go use log's, exists a dependency called **sh-logger**
+You can use functions inside dependencies by use "include's" in start of .sh file:
+#### Example: 
+Supose you go use log's, exists a dependency called **sh-logger**
 
 1) Open pom.sh and insert dependency lib containg reusable code: 
 ```
@@ -50,15 +51,15 @@ log_info "Work's fine!" # log_info is a reusable function inside sh-logger lib
 ```
 
 ### The three files of sh-pm:
-* bootstrap.sh
+#### bootstrap.sh
 Create environment variables to help stardardize path's
   
-* pom.sh
+#### pom.sh
 Define: 
 - Group and version of your script(s) application
 - Dependencies to be downloaded via shpm for use in you script(s)
 
-* shpm.sh
+#### shpm.sh
 The shell script package manager "executable"
 
 ### Expected folder structure
