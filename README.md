@@ -7,8 +7,8 @@ Shell Scripts Package Manager
 
 ### How to install in your project
 
-- Download sh-pm tar.gz
-- Extract files below to root folder of your project
+- [Download sh-pm tar.gz from](https://github.com/sh-pm/sh-pm/blob/master/releases/)
+- Extract to root folder of your project, the 3 files below 
   - **bootstrap.sh** 
   - **pom.sh**
   - **shpm.sh**
