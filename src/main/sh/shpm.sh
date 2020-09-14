@@ -195,14 +195,15 @@ update_dependency() {
 		  mkdir -p $LIB_DIR_PATH
 		fi
 		
-		DEP_FILENAME=$DEP_ARTIFACT_ID"-"$DEP_VERSION".tar.gz"
+		local DEP_FOLDER_NAME=$DEP_ARTIFACT_ID"-"$DEP_VERSION
+		local DEP_FILENAME=$DEP_FOLDER_NAME".tar.gz"
 		
 		shpm_log " - Downloading $DEP_FILENAME ..."
 		curl -s  http://$HOST:$PORT/sh-archiva/get/snapshot/$GROUP_ID/$DEP_ARTIFACT_ID/$DEP_VERSION > $LIB_DIR_PATH/$DEP_FILENAME 
 		
 		cd $LIB_DIR_PATH/
 		
-		shpm_log " - Extracting $DEP_FILENAME into $LIB_DIR_PATH/$DEP_FILENAME ..."
+		shpm_log " - Extracting $DEP_FILENAME into $LIB_DIR_PATH/$DEP_FOLDER_NAME ..."
 		if [[ -d  $LIB_DIR_PATH/$DEP_ARTIFACT_ID ]]; then
 			# evict rm -rf!
 			mv $LIB_DIR_PATH/$DEP_ARTIFACT_ID /tmp 2> /dev/null
@@ -216,21 +217,31 @@ update_dependency() {
 		
 		# if update a sh-pm
 		if [[ "$DEP_ARTIFACT_ID" == "sh-pm" ]]; then
+		
+        	if [[ ! -d $ROOT_DIR_PATH/tmpoldshpm ]]; then
+	        	mkdir $ROOT_DIR_PATH/tmpoldshpm		
+			fi
 	        
 	        shpm_log "   WARN: sh-pm updating itself ..."
+	        
 	        if [[ -f $ROOT_DIR_PATH/shpm.sh ]]; then
 	        	shpm_log " - backup actual sh-pm version to $ROOT_DIR_PATH/tmpoldshpm ..."
-	        	if [[ ! -d $ROOT_DIR_PATH/tmpoldshpm ]]; then
-		        	mkdir $ROOT_DIR_PATH/tmpoldshpm		
-				fi
 	        	mv $ROOT_DIR_PATH/shpm.sh $ROOT_DIR_PATH/tmpoldshpm
 	        fi
 	        
-        	TARGET_FOLDER=$ARTIFACT_ID"-"$VERSION
-        	
-	        if [[ -f $LIB_DIR_PATH/$TARGET_FOLDER/shpm.sh ]]; then
+	        if [[ -f $LIB_DIR_PATH/$DEP_FOLDER_NAME/shpm.sh ]]; then
 	        	shpm_log " - update shpm.sh ..."
-	        	cp $LIB_DIR_PATH/$TARGET_FOLDER/shpm.sh	$ROOT_DIR_PATH
+	        	cp $LIB_DIR_PATH/$DEP_FOLDER_NAME/shpm.sh	$ROOT_DIR_PATH
+	        fi
+	        
+	        if [[ -f $ROOT_DIR_PATH/$BOOTSTRAP_FILENAME ]]; then
+	        	shpm_log " - backup actual $BOOTSTRAP_FILENAME to $ROOT_DIR_PATH/tmpoldshpm ..."
+	        	mv $ROOT_DIR_PATH/$BOOTSTRAP_FILENAME $ROOT_DIR_PATH/tmpoldshpm
+	        fi
+	        
+	        if [[ -f $LIB_DIR_PATH/$DEP_FOLDER_NAME/$BOOTSTRAP_FILENAME ]]; then
+	        	shpm_log " - update $BOOTSTRAP_FILENAME ..."
+	        	cp $LIB_DIR_PATH/$DEP_FOLDER_NAME/$BOOTSTRAP_FILENAME	$ROOT_DIR_PATH
 	        fi
 		fi
 		
@@ -274,6 +285,9 @@ build_release() {
 		sed -i 's/source \.\.\/\.\.\/\.\.\/bootstrap.sh//g' *.sh
 	else
 	   	sed -i 's/source \.\.\/\.\.\/\.\.\/bootstrap.sh/source \.\/bootstrap.sh/g' shpm.sh
+	   	
+	   	cd $ROOT_DIR_PATH
+	   	sed -i 's/\#\!\/bin\/bash/\#\!\/bin\/bash\n# '$VERSION' - Build with sh-pm/g' *.sh
 	fi
 	
 	cd $TARGET_DIR_PATH
