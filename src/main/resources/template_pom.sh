@@ -9,5 +9,6 @@ declare -A REPOSITORY=( \
 
 declare -A DEPENDENCIES=( \
     [sh-pm]=v3.0.3
-    [sh_logger]=v1.3.0 \
+    [sh-logger]=v1.3.0 \
+    [sh-unit]=v1.5.0 \
 );
