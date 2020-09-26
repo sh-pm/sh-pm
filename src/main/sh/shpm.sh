@@ -2,6 +2,12 @@
 
 source ../../../bootstrap.sh
 
+# Evict catastrophic rm's
+if [[ -z $ROOT_DIR_PATH ]]; then
+	echo "bootstrap.sh file not loaded!"
+	exit 1
+fi
+
 shpm_log() {
 	echo "$1"
 }
@@ -354,6 +360,11 @@ build_release() {
 
 publish_release() {
 
+	if [[ "$SSO_API_AUTHENTICATION_URL" == "" ]]; then
+		shpm_log "In order to publish release, you must define SSO_API_AUTHENTICATION_URL variable in your pom.sh."
+		exit 1
+	fi
+
 	clean_release
 	
 	build_release
@@ -373,16 +384,32 @@ publish_release() {
 	shpm_log "  To: $TARGET_REPO"
 	shpm_log "----------------------------------------------------------------------------"
 	
-	shpm_log "Sending release to repository ..."	
-	MSG_RETURNED=$( curl -s -F file=@"$FILE_PATH" $TARGET_REPO )
-	shpm_log "Sended"
+	echo Username:
+	read USERNAME
 	
-	shpm_log "Return received from repository:"
-	shpm_log "----------------------------------------------------------------------------"
-	shpm_log "$MSG_RETURNED"
-	shpm_log "----------------------------------------------------------------------------"
+	echo Password:
+	read -s PASSWORD
 	
-	shpm_log "Done"
+	shpm_log "Authenticating user \"$USERNAME\" in $SSO_API_AUTHENTICATION_URL ..."	
+	TOKEN=$( curl -s -X POST -d '{"username" : "'$USERNAME'", "password": "'$PASSWORD'"}' -H 'Content-Type: application/json' $SSO_API_AUTHENTICATION_URL )
+	
+	if [[ "$TOKEN" == "" ]]; then
+		shpm_log "Authentication failed"
+		exit 2
+	else
+		shpm_log "Authentication successfull"
+		shpm_log "Sending release to repository ..."
+		TOKEN_HEADER="Authorization: Bearer $TOKEN"	
+		MSG_RETURNED=$( curl -s -F file=@"$FILE_PATH" -H "$TOKEN_HEADER" $TARGET_REPO )
+		shpm_log "Sended"
+		
+		shpm_log "Return received from repository:"
+		shpm_log "----------------------------------------------------------------------------"
+		shpm_log "$MSG_RETURNED"
+		shpm_log "----------------------------------------------------------------------------"
+		
+		shpm_log "Done"
+	fi 
 }
 
 run_all_tests() {
