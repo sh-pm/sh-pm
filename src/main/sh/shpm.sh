@@ -378,7 +378,7 @@ publish_release() {
 	local TGZ_FILE_NAME=$TARGET_FOLDER".tar.gz"
 	local FILE_PATH=$TARGET_DIR_PATH/$TGZ_FILE_NAME
 	
-	local TARGET_REPO="http://$HOST:$PORT/sh-archiva/snapshot/$GROUP_ID/$ARTIFACT_ID/$VERSION"
+	local TARGET_REPO="https://$HOST:$PORT/sh-archiva/snapshot/$GROUP_ID/$ARTIFACT_ID/$VERSION"
 	shpm_log "----------------------------------------------------------------------------"
 	shpm_log "From: $FILE_PATH"
 	shpm_log "  To: $TARGET_REPO"
@@ -390,7 +390,8 @@ publish_release() {
 	echo Password:
 	read -s PASSWORD
 	
-	shpm_log "Authenticating user \"$USERNAME\" in $SSO_API_AUTHENTICATION_URL ..."	
+	shpm_log "Authenticating user \"$USERNAME\" in $SSO_API_AUTHENTICATION_URL ..."
+	#echo "curl -s -X POST -d '{\"username\" : \"'$USERNAME'\", \"password\": \"'$PASSWORD'\"}' -H 'Content-Type: application/json' $SSO_API_AUTHENTICATION_URL"	
 	TOKEN=$( curl -s -X POST -d '{"username" : "'$USERNAME'", "password": "'$PASSWORD'"}' -H 'Content-Type: application/json' $SSO_API_AUTHENTICATION_URL )
 	
 	if [[ "$TOKEN" == "" ]]; then

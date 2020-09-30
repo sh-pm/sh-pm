@@ -3,6 +3,8 @@ ARTIFACT_ID=sh-pm
 VERSION=v3.1.1
 
 declare -A REPOSITORY=( \
-	[host]="li1299-135.members.linode.com" \
-	[port]=49156 \
+	[host]="shpmcenter.com" \
+	[port]=443 \
 );
+
+SSO_API_AUTHENTICATION_URL=https://shpmcenter.com/sso/rest/api/sso/authentication
