@@ -96,3 +96,7 @@ include_lib sh-logger
 #YOUR SH CODE HERE
 log_info "Work's fine!" # log_info is a reusable function inside sh-logger lib
 ```
+### Existing libraries
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/shpm-components.png" />
+</p>
