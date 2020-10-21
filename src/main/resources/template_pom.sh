@@ -3,7 +3,7 @@ ARTIFACT_ID=
 VERSION=v0.1.0
 
 declare -A REPOSITORY=( \
-	[host]="li1299-135.members.linode.com" \
+	[host]="shpmcenter.com" \
 	[port]=49156 \
 );
 
