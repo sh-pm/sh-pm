@@ -35,9 +35,12 @@ print_help() {
     echo "  publish               Publish compressed sh in repository"
     echo "  autoupdate            Update itself"
 	echo "  uninstall             Remove from local repository $LIB_DIR_SUBPATH"
+	echo "  init                  Initialize sh-pm expect files and folders project structure" 
 	echo ""
 	echo "EXAMPLES:"
 	echo "  ./shpm update"
+	echo ""
+	echo "  ./shpm init"
 	echo ""
 	echo "  ./shpm build"
 	echo ""
@@ -55,6 +58,7 @@ run_sh_pm() {
 	local PUBLISH=false
 	local AUTOUPDATE=false
 	local UNINSTALL=false
+	local INIT=false	
 	
 	if [ $# -eq 0 ];  then
 		print_help
@@ -94,6 +98,9 @@ run_sh_pm() {
 			if [[ "$ARG" == "uninstall" ]];  then
 				UNINSTALL="true"
 			fi
+			if [[ "$ARG" == "init" ]];  then
+				INIT="true"
+			fi
 		done
 	fi
 	
@@ -128,7 +135,11 @@ run_sh_pm() {
 	
 	if [[ "$UNINSTALL" == "true" ]];  then
 		uninstall_release
-	fi	
+	fi
+		
+	if [[ "$INIT" == "true" ]];  then
+		init_project_structure
+	fi			
 }
 
 clean_release() {
@@ -243,52 +254,61 @@ update_dependency() {
 		
 		cd $LIB_DIR_PATH/
 		
-		shpm_log "   - Extracting $DEP_FILENAME into $LIB_DIR_PATH/$DEP_FOLDER_NAME ..."
 		if [[ -d  $LIB_DIR_PATH/$DEP_ARTIFACT_ID ]]; then
+		    shpm_log "   - Removing existing folder $LIB_DIR_PATH/$DEP_ARTIFACT_ID ..."
 			# evict rm -rf!
 			mv $LIB_DIR_PATH/$DEP_ARTIFACT_ID /tmp 2> /dev/null
 			local TIMESTAMP=$( date +"%Y%m%d_%H%M%S_%N" )			
 			mv /tmp/$DEP_ARTIFACT_ID /tmp/$DEP_ARTIFACT_ID"_"$TIMESTAMP
 		fi
 		
-		tar -xzf $DEP_FILENAME
-		
-		rm -f $DEP_FILENAME
-		
-		# if update a sh-pm
-		if [[ "$DEP_ARTIFACT_ID" == "sh-pm" ]]; then
-		
-        	if [[ ! -d $ROOT_DIR_PATH/tmpoldshpm ]]; then
-	        	mkdir $ROOT_DIR_PATH/tmpoldshpm		
+		shpm_log "   - Extracting $DEP_FILENAME into $LIB_DIR_PATH/$DEP_FOLDER_NAME ..."
+		tar -xzf $DEP_FILENAME &>/dev/null
+			
+		if [[ $? == 0 ]]; then
+			
+			rm -f $DEP_FILENAME
+			
+			# if update a sh-pm
+			if [[ "$DEP_ARTIFACT_ID" == "sh-pm" ]]; then
+			
+	        	if [[ ! -d $ROOT_DIR_PATH/tmpoldshpm ]]; then
+		        	mkdir $ROOT_DIR_PATH/tmpoldshpm		
+				fi
+		        
+		        shpm_log "     WARN: sh-pm updating itself ..."
+		        
+		        if [[ -f $ROOT_DIR_PATH/shpm.sh ]]; then
+		        	shpm_log "   - backup actual sh-pm version to $ROOT_DIR_PATH/tmpoldshpm ..."
+		        	mv $ROOT_DIR_PATH/shpm.sh $ROOT_DIR_PATH/tmpoldshpm
+		        fi
+		        
+		        if [[ -f $LIB_DIR_PATH/$DEP_FOLDER_NAME/shpm.sh ]]; then
+		        	shpm_log "   - update shpm.sh ..."
+		        	cp $LIB_DIR_PATH/$DEP_FOLDER_NAME/shpm.sh	$ROOT_DIR_PATH
+		        fi
+		        
+		        if [[ -f $ROOT_DIR_PATH/$BOOTSTRAP_FILENAME ]]; then
+		        	shpm_log "   - backup actual $BOOTSTRAP_FILENAME to $ROOT_DIR_PATH/tmpoldshpm ..."
+		        	mv $ROOT_DIR_PATH/$BOOTSTRAP_FILENAME $ROOT_DIR_PATH/tmpoldshpm
+		        fi
+		        
+		        if [[ -f $LIB_DIR_PATH/$DEP_FOLDER_NAME/$BOOTSTRAP_FILENAME ]]; then
+		        	shpm_log "   - update $BOOTSTRAP_FILENAME ..."
+		        	cp $LIB_DIR_PATH/$DEP_FOLDER_NAME/$BOOTSTRAP_FILENAME	$ROOT_DIR_PATH
+		        fi
 			fi
-	        
-	        shpm_log "     WARN: sh-pm updating itself ..."
-	        
-	        if [[ -f $ROOT_DIR_PATH/shpm.sh ]]; then
-	        	shpm_log "   - backup actual sh-pm version to $ROOT_DIR_PATH/tmpoldshpm ..."
-	        	mv $ROOT_DIR_PATH/shpm.sh $ROOT_DIR_PATH/tmpoldshpm
-	        fi
-	        
-	        if [[ -f $LIB_DIR_PATH/$DEP_FOLDER_NAME/shpm.sh ]]; then
-	        	shpm_log "   - update shpm.sh ..."
-	        	cp $LIB_DIR_PATH/$DEP_FOLDER_NAME/shpm.sh	$ROOT_DIR_PATH
-	        fi
-	        
-	        if [[ -f $ROOT_DIR_PATH/$BOOTSTRAP_FILENAME ]]; then
-	        	shpm_log "   - backup actual $BOOTSTRAP_FILENAME to $ROOT_DIR_PATH/tmpoldshpm ..."
-	        	mv $ROOT_DIR_PATH/$BOOTSTRAP_FILENAME $ROOT_DIR_PATH/tmpoldshpm
-	        fi
-	        
-	        if [[ -f $LIB_DIR_PATH/$DEP_FOLDER_NAME/$BOOTSTRAP_FILENAME ]]; then
-	        	shpm_log "   - update $BOOTSTRAP_FILENAME ..."
-	        	cp $LIB_DIR_PATH/$DEP_FOLDER_NAME/$BOOTSTRAP_FILENAME	$ROOT_DIR_PATH
-	        fi
+		else 
+		   shpm_log "  ERROR: Could not extract $DEP_FILENAME into $LIB_DIR_PATH/$DEP_FOLDER_NAME!"		  
+                   shpm_log "  $DEP_ARTIFACT_ID was not updated to $DEP_VERSION!"
 		fi
 		
 		shpm_log "  Update $DEP_ARTIFACT_ID to $DEP_VERSION: Finish"
 }
 
 build_release() {
+
+    clean_release
 
 	run_all_tests
 	
@@ -457,6 +477,58 @@ auto_update() {
 	shpm_log "Could not update sh-pm: sh-pm not present in dependencies of pom.sh"
 	exit 1004
 }
+
+init_project_structure() {
+
+	shpm_log_operation "Running sh-pm init ..."
+	
+	local FILENAME="/tmp/nothing"
+	
+	if [[ ! -d $SRC_DIR_PATH ]]; then
+	   shpm_log "Creating $SRC_DIR_SUBPATH ..."
+	   mkdir -p "$SRC_DIR_PATH"
+	fi
+	
+	if [[ ! -d $TEST_DIR_PATH ]]; then
+	   shpm_log "Creating $TEST_DIR_SUBPATH ..."
+	   mkdir -p "$TEST_DIR_PATH"
+	fi  
+    
+    cd "$ROOT_DIR_PATH"
+    
+    shpm_log "Move source code to $SRC_DIR_PATH ..."
+    for file in $ROOT_DIR_PATH/*
+	do
+        FILENAME=$( basename "$file" )
+        
+        if [[  "$FILENAME" != "."* && "$FILENAME" != *"*"* && "$FILENAME" != *"~"* && "$FILENAME" != *"\$"* ]]; then
+		    if [[ -f $file ]]; then
+		        if [[ "$FILENAME" != "bootstrap.sh" && "$FILENAME" != "pom.sh" && "$FILENAME" != "shpm.sh" ]]; then
+		            shpm_log " - Moving file $file to $SRC_DIR_PATH ..."
+		            mv "$file" "$SRC_DIR_PATH"
+		        else
+		        	shpm_log " - Skipping $file"
+		        fi
+		    fi
+		    if [[ -d $file ]]; then
+		        if [[ "$FILENAME" != "src" && "$FILENAME" != "target" && "$FILENAME" != "tmpoldshpm" ]]; then
+	   	            shpm_log " - Moving folder $file to $SRC_DIR_PATH ..."
+	   	            mv "$file" "$SRC_DIR_PATH"
+	   	        else
+	   	        	shpm_log " - Skipping $file"	            
+		        fi
+		    fi
+		else
+		    shpm_log " - Skipping $file"
+	    fi
+	done
+	
+	cd "$SRC_DIR_PATH" 
+	
+	shpm_log "sh-pm expected project structure initialized"
+	exit 0
+}
+
 
 
 run_sh_pm $@
