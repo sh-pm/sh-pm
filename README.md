@@ -96,3 +96,31 @@ include_lib sh-logger
 #YOUR SH CODE HERE
 log_info "Work's fine!" # log_info is a reusable function inside sh-logger lib
 ```
+### Existing libraries
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/shpm-components.png" />
+</p>
+
+#### sh-logger
+Log utilities inspired in log4j
+
+#### sh-unit
+Functions to write and run unit tests of your project function's
+
+#### sh-commons
+##### date_time_utils.sh
+- Get timestamp's to add in string or filenames
+
+##### log_utils.sh
+- Print delimiters and script help
+
+##### net_utils.sh
+- Get local IP
+
+##### string_utils.sh
+string_start_with
+string_end_with
+string_contains
+
+##### validation_utils.sh
+- Many function to aux do script validation's: check number of params, if is a folder or file ... etc
