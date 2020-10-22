@@ -60,6 +60,8 @@ run_sh_pm() {
 	local UNINSTALL=false
 	local INIT=false	
 	
+	local VERBOSE=false	
+	
 	if [ $# -eq 0 ];  then
 		print_help
 		exit 1
@@ -101,12 +103,15 @@ run_sh_pm() {
 			if [[ "$ARG" == "init" ]];  then
 				INIT="true"
 			fi
+			if [[ "$ARG" == "-v" ]];  then
+				VERBOSE="true"
+			fi
 		done
 	fi
 	
 	
 	if [[ "$UPDATE" == "true" ]];  then
-		update_dependencies	
+		update_dependencies	$VERBOSE
 	fi
 	
 	if [[ "$CLEAN" == "true" ]];  then
@@ -126,7 +131,7 @@ run_sh_pm() {
 	fi
 	
 	if [[ "$PUBLISH" == "true" ]];  then	
-		publish_release
+		publish_release $VERBOSE
 	fi
 	
 	if [[ "$AUTOUPDATE" == "true" ]];  then	
@@ -161,6 +166,8 @@ clean_release() {
 
 update_dependencies() {
 
+    local VERBOSE=$1
+
 	shpm_log_operation "Update Dependencies"
 
 	local HOST=${REPOSITORY[host]}
@@ -168,7 +175,7 @@ update_dependencies() {
 	
 	shpm_log "Start update of ${#DEPENDENCIES[@]} dependencies ..."
 	for DEP_ARTIFACT_ID in "${!DEPENDENCIES[@]}"; do 
-		update_dependency $DEP_ARTIFACT_ID
+		update_dependency $DEP_ARTIFACT_ID $VERBOSE
 	done
 	
 	cd $ROOT_DIR_PATH
@@ -236,6 +243,8 @@ install_release () {
 
 update_dependency() {
 
+	    local VERBOSE=$1
+
         local DEP_ARTIFACT_ID=$1
 		local DEP_VERSION="${DEPENDENCIES[$DEP_ARTIFACT_ID]}"
 				
@@ -250,7 +259,12 @@ update_dependency() {
 		local DEP_FILENAME=$DEP_FOLDER_NAME".tar.gz"
 		
 		shpm_log "   - Downloading $DEP_FILENAME ..."
-		curl -s  http://$HOST:$PORT/sh-archiva/get/snapshot/$GROUP_ID/$DEP_ARTIFACT_ID/$DEP_VERSION > $LIB_DIR_PATH/$DEP_FILENAME 
+		
+		CURL_OPTIONS="-s"
+		if [[ "$VERBOSE" == "true" ]]; then
+		    CURL_OPTIONS="-v"
+		fi
+		curl $CURL_OPTIONS  https://$HOST:$PORT/sh-archiva/get/snapshot/$GROUP_ID/$DEP_ARTIFACT_ID/$DEP_VERSION > $LIB_DIR_PATH/$DEP_FILENAME 
 		
 		cd $LIB_DIR_PATH/
 		
@@ -380,6 +394,8 @@ build_release() {
 
 publish_release() {
 
+	local VERBOSE=$1
+
 	if [[ "$SSO_API_AUTHENTICATION_URL" == "" ]]; then
 		shpm_log "In order to publish release, you must define SSO_API_AUTHENTICATION_URL variable in your pom.sh."
 		exit 1
@@ -419,9 +435,15 @@ publish_release() {
 		exit 2
 	else
 		shpm_log "Authentication successfull"
-		shpm_log "Sending release to repository ..."
-		TOKEN_HEADER="Authorization: Bearer $TOKEN"	
-		MSG_RETURNED=$( curl -s -F file=@"$FILE_PATH" -H "$TOKEN_HEADER" $TARGET_REPO )
+		shpm_log "Sending release to repository $TARGET_REPO  ..."
+		TOKEN_HEADER="Authorization: Bearer $TOKEN"
+		
+		CURL_OPTIONS="-s"
+		if [[ "$VERBOSE" == "true" ]]; then
+		    CURL_OPTIONS="-v"
+		fi
+			
+		MSG_RETURNED=$( curl $CURL_OPTIONS -F file=@"$FILE_PATH" -H "$TOKEN_HEADER" $TARGET_REPO )
 		shpm_log "Sended"
 		
 		shpm_log "Return received from repository:"
