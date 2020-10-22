@@ -7,7 +7,7 @@ Shell Scripts Package Manager
 
 ### How to install in your project
 
-- <a href="https://github.com/sh-pm/sh-pm/blob/master/releases/" target="_blank">Download the last stable release</a>
+- <a href="https://shpmcenter.com" target="_blank">Download the last stable release</a>
 - Extract to root folder of your project, the 3 files below 
   - **bootstrap.sh** 
   - **pom.sh**
@@ -60,7 +60,36 @@ Even though several scripts refer to several different versions of the same lib,
 
 **Reason**: if several different versions are loaded, and certain functions and / or variables exist in more than one version, the environment is only valid for what was defined in the last load. The definitions of variables and functions of previously loaded versions will be overwritten by the most recent uploads and this can cause unpredictable behavior.
 
-### How to reuse code
+### Existing libraries
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/shpm-components.png" />
+</p>
+
+#### sh-logger
+Log utilities inspired in log4j
+
+#### sh-unit
+Functions to write and run unit tests of your project function's
+
+#### sh-commons
+##### date_time_utils.sh
+- Get timestamp's to add in string or filenames
+
+##### log_utils.sh
+- Print delimiters and script help
+
+##### net_utils.sh
+- Get local IP
+
+##### string_utils.sh
+string_start_with
+string_end_with
+string_contains
+
+##### validation_utils.sh
+- Many function to aux do script validation's: check number of params, if is a folder or file ... etc
+
+### How to use existing .sh libraries
 
 You can use functions inside dependencies by use "include's" in start of .sh file:
 #### Example: 
@@ -96,31 +125,3 @@ include_lib sh-logger
 #YOUR SH CODE HERE
 log_info "Work's fine!" # log_info is a reusable function inside sh-logger lib
 ```
-### Existing libraries
-<p align="center">
-  <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/shpm-components.png" />
-</p>
-
-#### sh-logger
-Log utilities inspired in log4j
-
-#### sh-unit
-Functions to write and run unit tests of your project function's
-
-#### sh-commons
-##### date_time_utils.sh
-- Get timestamp's to add in string or filenames
-
-##### log_utils.sh
-- Print delimiters and script help
-
-##### net_utils.sh
-- Get local IP
-
-##### string_utils.sh
-string_start_with
-string_end_with
-string_contains
-
-##### validation_utils.sh
-- Many function to aux do script validation's: check number of params, if is a folder or file ... etc
