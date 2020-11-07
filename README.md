@@ -58,10 +58,11 @@ Even though several scripts refer to several different versions of the same lib,
   * TRUE=0
   * FALSE=1
 
-## Existing libraries
+## Existing dependencies available
 <p align="center">
   <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/shpm-components.png" />
 </p>
+The dependencies/packages/libraries below are available in shpmcenter.com:
 
 #### sh-logger
 Log utilities inspired in log4j: <a href="https://github.com/sh-pm/sh-logger" target="_blank">https://github.com/sh-pm/sh-logger</a>
@@ -73,7 +74,7 @@ Functions to write and run unit tests of your project function's: <a href="https
 Common utilities for manipulation of date and time, string, IP and more: <a href="https://github.com/sh-pm/sh-commons" target="_blank">https://github.com/sh-pm/sh-commons</a>
 
 
-## How to use existing .sh libraries
+## How to use existing packages;
 
 You can use functions inside dependencies by use "include's" in start of .sh file:
 #### Example: 
