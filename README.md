@@ -1,12 +1,12 @@
 <p align="center">
-Welcome to the <b>SH-PM</b>: the <b>SH</b>ell script <b>P</b>ackage <b>M</b>anager. 
+<h2>Welcome to the <b>SH-PM</b>: the <b>SH</b>ell script <b>P</b>ackage <b>M</b>anager. </h2>
 </p>
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/shpm-logo.png" />
 </p>
 
-### How to install in your project
+## How to install in your project
 
 <a href="https://www.youtube.com/embed/NET9aLS3K-A" target="_blank">See in this video</a>
 
@@ -48,46 +48,32 @@ It will create **src/main/sh** folder to store your scripts (_Your shell script 
 
 Finish: After the 5 steps, your project, is ready to use dependencies downloaded!
 
-# WARNING
-## "Boolean values":
-  * TRUE=0
-  * FALSE=1
-
-## Dependencies: 
+## Very Important!
+### Only 1 version of each dependency per project! 
 Even though several scripts refer to several different versions of the same lib, **only one version is used: the version that is in the project's _pom.sh_**.
 
 **Reason**: if several different versions are loaded, and certain functions and / or variables exist in more than one version, the environment is only valid for what was defined in the last load. The definitions of variables and functions of previously loaded versions will be overwritten by the most recent uploads and this can cause unpredictable behavior.
 
-### Existing libraries
+### "Boolean values":
+  * TRUE=0
+  * FALSE=1
+
+## Existing libraries
 <p align="center">
   <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/shpm-components.png" />
 </p>
 
 #### sh-logger
-Log utilities inspired in log4j
+Log utilities inspired in log4j: <a href="https://github.com/sh-pm/sh-logger" target="_blank">https://github.com/sh-pm/sh-logger</a>
 
 #### sh-unit
-Functions to write and run unit tests of your project function's
+Functions to write and run unit tests of your project function's: <a href="https://github.com/sh-pm/sh-unit" target="_blank">https://github.com/sh-pm/sh-unit</a>
 
 #### sh-commons
-##### date_time_utils.sh
-- Get timestamp's to add in string or filenames
+Common utilities for manipulation of date and time, string, IP and more: <a href="https://github.com/sh-pm/sh-commons" target="_blank">https://github.com/sh-pm/sh-commons</a>
 
-##### log_utils.sh
-- Print delimiters and script help
 
-##### net_utils.sh
-- Get local IP
-
-##### string_utils.sh
-string_start_with
-string_end_with
-string_contains
-
-##### validation_utils.sh
-- Many function to aux do script validation's: check number of params, if is a folder or file ... etc
-
-### How to use existing .sh libraries
+## How to use existing .sh libraries
 
 You can use functions inside dependencies by use "include's" in start of .sh file:
 #### Example: 
