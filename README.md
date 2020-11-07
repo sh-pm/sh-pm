@@ -1,5 +1,5 @@
 <p align="center">
-<h2>Welcome to the <b>SH-PM</b>: the <b>SH</b>ell script <b>P</b>ackage <b>M</b>anager. </h2>
+Welcome to the <b>SH-PM</b>: the <b>SH</b>ell script <b>P</b>ackage <b>M</b>anager.
 </p>
 
 <p align="center">
