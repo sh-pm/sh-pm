@@ -8,7 +8,10 @@ Welcome to the <b>SH-PM</b>: the <b>SH</b>ell script <b>P</b>ackage <b>M</b>anag
 
 ## How to install in your project
 
-<a href="https://www.youtube.com/embed/NET9aLS3K-A" target="_blank">See in this video</a>
+<a href="https://www.youtube.com/watch?v=NET9aLS3K-A">Click to see this video: </a>
+
+[![See on this video](https://img.youtube.com/vi/NET9aLS3K-A/0.jpg)](https://www.youtube.com/watch?v=NET9aLS3K-A)
+
 
 To quickly install and start use it in your project, you have perform only 5 steps: 
 
