@@ -169,9 +169,6 @@ update_dependencies() {
     local VERBOSE=$1
 
 	shpm_log_operation "Update Dependencies"
-
-	local HOST=${REPOSITORY[host]}
-	local PORT=${REPOSITORY[port]}
 	
 	shpm_log "Start update of ${#DEPENDENCIES[@]} dependencies ..."
 	for DEP_ARTIFACT_ID in "${!DEPENDENCIES[@]}"; do 
@@ -242,47 +239,127 @@ install_release () {
 }
 
 update_dependency() {
-
-	    local VERBOSE=$1
-
         local DEP_ARTIFACT_ID=$1
-		local DEP_VERSION="${DEPENDENCIES[$DEP_ARTIFACT_ID]}"
-				
-		shpm_log "----------------------------------------------------"
-		shpm_log "  Update $DEP_ARTIFACT_ID to $DEP_VERSION: Start"
+	    local VERBOSE=$2
+	    
+	    local HOST=${REPOSITORY[host]} # here REPOSITORY referenced is a global var
+		local PORT=${REPOSITORY[port]} # here REPOSITORY referenced is a global var
+
+		local ARTIFACT_DATA="${DEPENDENCIES[$DEP_ARTIFACT_ID]}"
+		local DEP_VERSION
+		local REPOSITORY                # here REPOSITORY is local with same name
+		
+		local DOWNLOAD_SUCESS=$FALSE
+		local DOWNLOAD_FROM_GIT=$FALSE
 		
 		if [[ ! -d $LIB_DIR_PATH ]]; then
 		  mkdir -p $LIB_DIR_PATH
 		fi
 		
+		# Download from git
+		if [[ "$ARTIFACT_DATA" == *"@"* ]]; then
+			DEP_VERSION=$( echo $ARTIFACT_DATA | cut -d "@" -f 1 | xargs ) #xargs is to trim string!
+			REPOSITORY=$( echo $ARTIFACT_DATA | cut -d "@" -f 2 | xargs ) #xargs is to trim string!
+			
+			if [[ "$REPOSITORY" == "" ]]; then
+				shpm_log "Error in update of $DEP_ARTIFACT_ID dependency: Inform a repository after '@'"
+				exit 1
+			fi
+			
+			DOWNLOAD_FROM_GIT=$TRUE
+		# Download from shpmcenter
+		else
+			REPOSITORY=$HOST":"$PORT
+			DEP_VERSION="$ARTIFACT_DATA"
+			
+			DOWNLOAD_FROM_GIT=$FALSE
+		fi
+
 		local DEP_FOLDER_NAME=$DEP_ARTIFACT_ID"-"$DEP_VERSION
-		local DEP_FILENAME=$DEP_FOLDER_NAME".tar.gz"
 		
-		shpm_log "   - Downloading $DEP_FILENAME ..."
-		
-		CURL_OPTIONS="-s"
-		if [[ "$VERBOSE" == "true" ]]; then
-		    CURL_OPTIONS="-v"
+		shpm_log "----------------------------------------------------"
+		shpm_log "  Updating $DEP_ARTIFACT_ID to $DEP_VERSION: Start"				
+		shpm_log "   - Downloading $DEP_ARTIFACT_ID $DEP_VERSION from $REPOSITORY ..."
+			
+		# If repo is a shpmcenter 
+		if [[ $DOWNLOAD_FROM_GIT == $FALSE ]]; then
+			local DEP_FILENAME=$DEP_FOLDER_NAME".tar.gz"
+			
+			CURL_OPTIONS="-s"
+			if [[ "$VERBOSE" == "true" ]]; then
+			    CURL_OPTIONS="-v"
+			fi
+			curl $CURL_OPTIONS  https://$REPOSITORY/sh-archiva/get/snapshot/$GROUP_ID/$DEP_ARTIFACT_ID/$DEP_VERSION > $LIB_DIR_PATH/$DEP_FILENAME 
+			
+			cd $LIB_DIR_PATH/
+			
+			if [[ -d  $LIB_DIR_PATH/$DEP_ARTIFACT_ID ]]; then
+			    shpm_log "   - Removing existing folder $LIB_DIR_PATH/$DEP_ARTIFACT_ID ..."
+				# evict rm -rf!
+				mv $LIB_DIR_PATH/$DEP_ARTIFACT_ID /tmp 2> /dev/null
+				local TIMESTAMP=$( date +"%Y%m%d_%H%M%S_%N" )			
+				mv /tmp/$DEP_ARTIFACT_ID /tmp/$DEP_ARTIFACT_ID"_"$TIMESTAMP
+			fi
+			
+			shpm_log "   - Extracting $DEP_FILENAME into $LIB_DIR_PATH/$DEP_FOLDER_NAME ..."
+			tar -xzf $DEP_FILENAME &>/dev/null
+			
+			if [[ $? == 0 ]]; then
+				DOWNLOAD_SUCESS=$TRUE
+				rm -f $DEP_FILENAME
+			else
+				shpm_log "  ERROR: Could not extract $DEP_FILENAME into $LIB_DIR_PATH/$DEP_FOLDER_NAME!"
+			fi
+			
+		# if repo is a git
+		else
+ 
+ 			local ACTUAL_DIR=$( pwd )
+ 			
+ 			cd $LIB_DIR_PATH/
+			
+			if [[ -d $DEP_FOLDER_NAME ]]; then
+				mv $DEP_FOLDER_NAME /tmp				
+			fi
+			
+			if [[ -d "/tmp/$DEP_FOLDER_NAME" ]]; then
+				rm -rf /tmp/$DEP_FOLDER_NAME				
+			fi
+			
+			if [[ -d "/tmp/$DEP_ARTIFACT_ID" ]]; then
+				rm -rf /tmp/$DEP_ARTIFACT_ID				
+			fi
+			
+			cd /tmp/
+			
+			shpm_log "     - Cloning from https://$REPOSITORY/$DEP_ARTIFACT_ID into /tmp/$DEP_ARTIFACT_ID ..."
+			git clone --branch $DEP_VERSION "https://"$REPOSITORY"/"$DEP_ARTIFACT_ID".git" &>/dev/null
+			
+			if [[ $? == 0 ]]; then
+				DOWNLOAD_SUCESS=$TRUE
+			fi
+			
+			if [[ ! -d "$LIB_DIR_PATH/$DEP_FOLDER_NAME" ]]; then
+				mkdir -p $LIB_DIR_PATH/$DEP_FOLDER_NAME
+			fi
+						
+			cd $LIB_DIR_PATH/$DEP_FOLDER_NAME
+			
+			shpm_log "   - Copy artifacts from /tmp/$DEP_ARTIFACT_ID to $LIB_DIR_PATH/$DEP_FOLDER_NAME ..."
+			cp /tmp/$DEP_ARTIFACT_ID/src/main/sh/* .
+			cp /tmp/$DEP_ARTIFACT_ID/pom.sh .
+			
+			cd /tmp
+			
+			shpm_log "   - Removing /tmp/$DEP_ARTIFACT_ID ..."
+			if [[ -d /tmp/"$DEP_ARTIFACT_ID" ]]; then
+				rm -rf /tmp/$DEP_ARTIFACT_ID				
+			fi
+			
+			cd $ACTUAL_DIR
 		fi
-		curl $CURL_OPTIONS  https://$HOST:$PORT/sh-archiva/get/snapshot/$GROUP_ID/$DEP_ARTIFACT_ID/$DEP_VERSION > $LIB_DIR_PATH/$DEP_FILENAME 
-		
-		cd $LIB_DIR_PATH/
-		
-		if [[ -d  $LIB_DIR_PATH/$DEP_ARTIFACT_ID ]]; then
-		    shpm_log "   - Removing existing folder $LIB_DIR_PATH/$DEP_ARTIFACT_ID ..."
-			# evict rm -rf!
-			mv $LIB_DIR_PATH/$DEP_ARTIFACT_ID /tmp 2> /dev/null
-			local TIMESTAMP=$( date +"%Y%m%d_%H%M%S_%N" )			
-			mv /tmp/$DEP_ARTIFACT_ID /tmp/$DEP_ARTIFACT_ID"_"$TIMESTAMP
-		fi
-		
-		shpm_log "   - Extracting $DEP_FILENAME into $LIB_DIR_PATH/$DEP_FOLDER_NAME ..."
-		tar -xzf $DEP_FILENAME &>/dev/null
 			
-		if [[ $? == 0 ]]; then
-			
-			rm -f $DEP_FILENAME
-			
+		if [[ $DOWNLOAD_SUCESS == $TRUE ]]; then
 			# if update a sh-pm
 			if [[ "$DEP_ARTIFACT_ID" == "sh-pm" ]]; then
 			
@@ -312,9 +389,8 @@ update_dependency() {
 		        	cp $LIB_DIR_PATH/$DEP_FOLDER_NAME/$BOOTSTRAP_FILENAME	$ROOT_DIR_PATH
 		        fi
 			fi
-		else 
-		   shpm_log "  ERROR: Could not extract $DEP_FILENAME into $LIB_DIR_PATH/$DEP_FOLDER_NAME!"		  
-                   shpm_log "  $DEP_ARTIFACT_ID was not updated to $DEP_VERSION!"
+		else 		   		  
+           shpm_log "  $DEP_ARTIFACT_ID was not updated to $DEP_VERSION!"
 		fi
 		
 		shpm_log "  Update $DEP_ARTIFACT_ID to $DEP_VERSION: Finish"
