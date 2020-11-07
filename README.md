@@ -1,8 +1,9 @@
-## sh-pm
-Welcome to the SH-PM, the SHell Script Package Manager. 
+<p align="center">
+Welcome to the <b>SH-PM</b>: the <b>SH</b>ell script <b>P</b>ackage <b>M</b>anager. 
+</p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/sh-pm-logo.png" />
+  <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/shpm-logo.png" />
 </p>
 
 ### How to install in your project
