@@ -1,54 +1,51 @@
 ## sh-pm
-Shell Scripts Package Manager
+Welcome to the SH-PM, the SHell Script Package Manager. 
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/sh-pm-architecture.png" />
+  <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/sh-pm-logo.png" />
 </p>
 
 ### How to install in your project
 
-- <a href="https://shpmcenter.com" target="_blank">Download the last stable release</a>
-- Extract to root folder of your project, the 3 files below 
-  - **bootstrap.sh** 
-  - **pom.sh**
-  - **shpm.sh**
+<a href="https://www.youtube.com/embed/NET9aLS3K-A" target="_blank">See in this video</a>
 
-### The three files of sh-pm:
-#### bootstrap.sh
-Create environment variables to help stardardize path's
-  
-#### pom.sh
-Define: 
-- Group and version of your script(s) application
-- Dependencies to be downloaded via shpm for use in you script(s)
+To quickly install and start use it in your project, you have perform only 5 steps: 
 
-#### shpm.sh
-The shell script package manager "executable"
+#### Step 1 -  Download from shpmcenter
 
-### Expected folder structure
-shpm expected a folder structure to be create to organize your script(s)
+Using your browser, access <a href="https://shpmcenter.com" target="_blank">shpmcenter.com</a> and download the last version
+
+#### Step 2 -  Extract to root folder
+
+After download, extract the 3 files inside a **.tar.gz** to root folder of your project.
+After this step, in your root folder will be add the 3 shell script files: 
+ - **bootstrap.sh**: Create environment variables to help stardardize path's;
+ - **pom.sh**: identify your project and dependencies to be downloaded to use;
+ - **shpm.sh**: is SH-PM itself.
+
+#### Step 3 – Name your project
+
+Open shell script file pom.sh and inform in **ARTIFACT_ID** the name of your project. 
+This file contain all dependencies to be used in your project.
+
+#### Step 4 – Update dependencies
+
+Using a terminal, inside root folder of your project, perform a command 
 ```
-your_project_folder
-   \src
-      \main
-         \lib
-      \sh
-         your_script1.sh
-         your_script2.sh
-         your_script3.sh
-         \subfolder
-            your_script4.sh
-            your_script5.sh
-         ...
-         your_scriptN.sh
-      \resources
-  
-   \target
-      your_project_folder-VERSION.tar.gz
-   pom.sh
-   shpm.sh
-   bootstrap.sh
+  $ ./shpm.sh update
 ```
+The package manager will download all version of dependencies informed in pom.sh to **src/lib/sh** folder. 
+After update, dependencies will be available for use in your shell scripts.
+
+#### Step 5 – Init expected structure
+
+SH-PM expects you to store scripts, unit tests and dependencies in separate folders. Perform a command:
+```
+$ ./shpm.sh init
+```
+It will create **src/main/sh** folder to store your scripts (_Your shell script code automatically will be moved to this folder_) and **src/test.sh** to store your unit tests. 
+
+Finish: After the 5 steps, your project, is ready to use dependencies downloaded!
 
 # WARNING
 ## "Boolean values":
