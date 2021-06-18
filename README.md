@@ -60,7 +60,7 @@ declare -A DEPENDENCIES=( \
 	[sh-logger]=v1.4.0@github.com/sh-pm \
 );
 ```
-OBS: In multiline command's don't put spaces before '\' character: it will cause errors!
+OBS: In multiline command's don't put spaces before \ character: it will cause errors!
 
 2) Run shpm update to download dependency lib with reusable code from GitHub
 ```
@@ -90,7 +90,7 @@ declare -A DEPENDENCIES=( \
 	[sh-commons]=v2.0.0@github.com/sh-pm \
 );
 ```
-OBS: In multiline command's don't put spaces before '\' character: it will cause errors!
+OBS: In multiline command's don't put spaces before \ character: it will cause errors!
 
 2) Run shpm update to download dependency lib with reusable code from GitHub
 ```
