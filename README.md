@@ -74,12 +74,15 @@ The command will download and extract dependency to local sh-pm repository locat
 3) Include dependency lib in file(s) and use reusable code
 Example:
 ```
-#!/bin/bash
-source ../../..//bootstrap.sh
+#!/usr/bin/env bash
+source ../../../bootstrap.sh
 
 include_lib sh-logger
+include_lib sh-commons
 
-log_info "Work's fine!" # log_info is a reusable function inside sh-logger lib
+log_info "Hello World SH-PM: test show some informative log text" # log_info is a reusable function inside sh-logger lib
+log_warn "Hello World SH-PM: test show some warning log text" # log_warn is a reusable function inside sh-logger lib
+log_error "Hello World SH-PM: test show some error log text" # log_error is a reusable function inside sh-logger lib
 ```
 
 ### Example 2: Ensure correct number of params
@@ -107,15 +110,18 @@ The command will download and extract dependency to local sh-pm repository locat
 3) Include dependency lib in file(s) and use reusable code
 Example: Let's force user to pass exactly 1 param to script
 ```
-#!/bin/bash
-source ../../..//bootstrap.sh
+#!/usr/bin/env bash
+source ../../../bootstrap.sh
 
 include_lib sh-logger
 include_lib sh-commons
 
+log_info "Test show some informative log text" # log_info is a reusable function inside sh-logger lib
+log_warn "Test show some warning log text" # log_warn is a reusable function inside sh-logger lib
+log_error "Test show some error log text" # log_warn is a reusable function inside sh-logger lib
+
 ensure_number_params_correct 1 $@
 
-log_info "Work's fine!" # log_info is a reusable function inside sh-logger lib
 ```
 
 
