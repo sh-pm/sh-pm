@@ -108,7 +108,7 @@ function include_lib () {
 		exit 1002
 	fi
 	
-	for SH_FILE in "$LIB_DIR_PATH/$LIB_TO_INCLUDE""-""$DEP_VERSION/*"; do
+	for SH_FILE in "$LIB_DIR_PATH/$LIB_TO_INCLUDE""-""$DEP_VERSION"/*; do
 	    if [[ "$(basename "$SH_FILE")" != "$DEPENDENCIES_FILENAME" && "$(basename "$SH_FILE")" != "$BOOTSTRAP_FILENAME" ]]; then
 			include_file "$SH_FILE" 
 		else
