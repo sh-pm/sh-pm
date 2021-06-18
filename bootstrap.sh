@@ -100,7 +100,7 @@ function include_lib () {
 		internal_debug "include_lib: lib $LIB_TO_INCLUDE already included."
 	fi
 	
-	local DEP_VERSION="${DEPENDENCIES[$LIB_TO_INCLUDE]}"	
+	local DEP_VERSION=$( echo "${DEPENDENCIES[$LIB_TO_INCLUDE]}" | cut -d "@" -f 1 | xargs ) #xargs is to trim string!	
 	local DEP_FOLDER_PATH="$LIB_DIR_PATH/$LIB_TO_INCLUDE""-""$DEP_VERSION"
 	
 	if [[ ! -d "$DEP_FOLDER_PATH" ]]; then
