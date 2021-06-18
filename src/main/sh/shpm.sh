@@ -58,6 +58,7 @@ run_sh_pm() {
 	local BUILD=false
 	local INSTALL=false	
 	local PUBLISH=false
+	local   SKIP_SHELLCHECK=false
 	local AUTOUPDATE=false
 	local UNINSTALL=false
 	local INIT=false	
@@ -85,6 +86,8 @@ run_sh_pm() {
 		
 			if [[ "$ARG" == "build" ]];  then
 				BUILD="true"
+				i=$((i+1))
+				SKIP_SHELLCHECK="${!i:-false}"
 			fi
 			
 			if [[ "$ARG" == "install" ]];  then
@@ -93,6 +96,8 @@ run_sh_pm() {
 			
 			if [[ "$ARG" == "publish" ]];  then
 				PUBLISH="true"
+				i=$((i+1))
+				SKIP_SHELLCHECK="${!i:-false}"
 			fi
 			
 			if [[ "$ARG" == "autoupdate" ]];  then
@@ -580,9 +585,17 @@ send_to_sh_archiva () {
 run_shellcheck() {
     local SHELLCHECK_CMD
     SHELLCHECK_CMD=$(which shellcheck)
+
+	shpm_log_operation "Running ShellCheck in .sh files ..."
+    
+    if [[ "$SKIP_SHELLCHECK" == "true" ]]; then
+    	shpm_log ""
+    	shpm_log "WARNING: Skipping ShellCheck verification !!!"
+    	shpm_log ""
+    	return "$TRUE" # continue execution with warning    	
+    fi
     
     if [[ ! -z "$SHELLCHECK_CMD" ]]; then
-	    shpm_log_operation "Running ShellCheck in .sh files ..."
 	    
 	    if [[ ! -d "$TARGET_DIR_PATH" ]]; then
 	    	mkdir -p "$TARGET_DIR_PATH"
@@ -590,13 +603,15 @@ run_shellcheck() {
 	    
 	    for FILE_TO_CHECK in $SRC_DIR_PATH/*.sh; do        
 	    
-	    	if "$SHELLCHECK_CMD" -x -e SC1090 "$FILE_TO_CHECK" > "$TARGET_DIR_PATH/shellcheck.log"; then
+	    	if "$SHELLCHECK_CMD" -x -e SC1090 -e SC1091 "$FILE_TO_CHECK" > "$TARGET_DIR_PATH/shellcheck.log"; then
 	    		shpm_log "$FILE_TO_CHECK passed in shellcheck"
 	    	else
 	    		shpm_log "$FILE_TO_CHECK have shellcheck errors. See log in $TARGET_DIR_PATH"
 	    		exit 1
 	    	fi
     	done;
+    else
+    	shpm_log "WARNING: ShellCheck not found: skipping ShellCheck verification !!!"
     fi
     
     shpm_log ""
