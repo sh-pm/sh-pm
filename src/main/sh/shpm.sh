@@ -514,6 +514,10 @@ run_shellcheck() {
     if [[ ! -z "$SHELLCHECK_CMD" ]]; then
 	    shpm_log_operation "Running ShellCheck in .sh files ..."
 	    
+	    if [[ ! -d "$TARGET_DIR_PATH" ]]; then
+	    	mkdir -p "$TARGET_DIR_PATH"
+	    fi
+	    
 	    for FILE_TO_CHECK in $SRC_DIR_PATH/*.sh; do        
 	    
 	    	if "$SHELLCHECK_CMD" -x -e SC1090 "$FILE_TO_CHECK" > "$TARGET_DIR_PATH/shellcheck.log"; then
