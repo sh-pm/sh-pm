@@ -1,4 +1,14 @@
 ==============================================================================
+v4.0.0
+==============================================================================
+
+- ShellCheck revision in all code;
+- sh-pm pass use shellcheck if it exists when run tests;
+- Update pass to use only git repositories;
+- Remove REPOSITORY from pom.sh;
+- Add release 4.0.0 in releases folder;
+
+==============================================================================
 V3.3.0
 ==============================================================================
 - Now is possible update dependencies using git repository
