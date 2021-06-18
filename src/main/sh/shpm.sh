@@ -452,8 +452,68 @@ build_release() {
 	shpm_log "Done"
 }
 
+
+create_new_remote_branch_from_master_branch() {
+	local ACTUAL_BRANCH
+	local MASTER_BRANCH
+	local NEW_BRANCH
+	local GIT_CMD
+
+	NEW_BRANCH=$1
+	
+	if [[ "$NEW_BRANCH" != "" && "$VERSION" != "" ]]; then
+		GIT_CMD=$( which git )
+		
+		cd "$ROOT_DIR_PATH" || exit 1;
+	
+		$GIT_CMD add .
+	
+		$GIT_CMD commit -m "$NEW_BRANCH" -m "- New release version"
+		
+		ACTUAL_BRANCH=$( $GIT_CMD rev-parse --abbrev-ref HEAD | xargs )
+
+		if [[ "$ACTUAL_BRANCH" != "master" && "$ACTUAL_BRANCH" != "main" ]]; then
+			MASTER_BRANCH=$( $GIT_CMD branch | grep "master\|main" | xargs )
+			$GIT_CMD checkout "$MASTER_BRANCH" 
+		fi
+		
+		$GIT_CMD push origin "$MASTER_BRANCH"
+
+		$GIT_CMD checkout -b "$NEW_BRANCH"
+
+		$GIT_CMD push -u origin "$NEW_BRANCH"
+	fi
+}
+
 publish_release() {
 
+	local VERBOSE=$1
+
+	clean_release
+	
+	build_release
+
+	shpm_log_operation "Starting publish release process"
+	
+	local TARGET_FOLDER=$ARTIFACT_ID"-"$VERSION
+	local TGZ_FILE_NAME=$TARGET_FOLDER".tar.gz"
+	local FILE_PATH=$TARGET_DIR_PATH/$TGZ_FILE_NAME
+	
+	shpm_log_operation "Copying .tgz file to releaes folder"
+	local RELEASES_PATH
+
+	RELEASES_PATH="$ROOT_DIR_PATH""/""releases"
+
+	if [[ ! -d "$RELEASES_PATH" ]]; then
+		mkdir -p "$RELEASES_PATH"
+	fi
+
+	cp "$FILE_PATH" "$RELEASES_PATH" 
+	
+	create_new_remote_branch_from_master_branch "$VERSION" 
+}
+
+send_to_sh_archiva () {
 	local VERBOSE=$1
 
 	if [[ "$SSO_API_AUTHENTICATION_URL" == "" ]]; then
@@ -466,14 +526,15 @@ publish_release() {
 	build_release
 
 	shpm_log_operation "Starting publish release process"
-	 
+	
 	local HOST=${REPOSITORY[host]}
 	local PORT=${REPOSITORY[port]}	
 
 	local TARGET_FOLDER=$ARTIFACT_ID"-"$VERSION
 	local TGZ_FILE_NAME=$TARGET_FOLDER".tar.gz"
 	local FILE_PATH=$TARGET_DIR_PATH/$TGZ_FILE_NAME
-	
+
+
 	local TARGET_REPO="https://$HOST:$PORT/sh-archiva/snapshot/$GROUP_ID/$ARTIFACT_ID/$VERSION"
 	shpm_log "----------------------------------------------------------------------------"
 	shpm_log "From: $FILE_PATH"
@@ -513,6 +574,7 @@ publish_release() {
 		
 		shpm_log "Done"
 	fi 
+
 }
 
 run_shellcheck() {
@@ -551,19 +613,25 @@ run_all_tests() {
 	local ACTUAL_DIR
 	ACTUAL_DIR=$(pwd)
 
-	cd "$TEST_DIR_PATH" || exit
+	if [[ -d "$TEST_DIR_PATH" ]]; then
 	
-	local TEST_FILES
-	TEST_FILES=( $(ls ./*_test.sh 2> /dev/null) );
+		cd "$TEST_DIR_PATH" || exit
+		
+		local TEST_FILES
+		TEST_FILES=( $(ls ./*_test.sh 2> /dev/null) );
+		
+		shpm_log "Found ${#TEST_FILES[@]} test files" 
+		if (( "${#TEST_FILES[@]}" > 0 )); then
+			for file in "${TEST_FILES[@]}"
+			do
+				shpm_log "Run file ..."
+				source "$file"
+			done
+		else
+			shpm_log "Nothing to test"
+		fi
 	
-	shpm_log "Found ${#TEST_FILES[@]} test files" 
-	if (( "${#TEST_FILES[@]}" > 0 )); then
-		for file in "${TEST_FILES[@]}"
-		do
-			shpm_log "Run file ..."
-			source "$file"
-		done
-	else
+	else 
 		shpm_log "Nothing to test"
 	fi
 	
@@ -617,7 +685,7 @@ init_project_structure() {
         
         if [[  "$FILENAME" != "."* && "$FILENAME" != *"*"* && "$FILENAME" != *"~"* && "$FILENAME" != *"\$"* ]]; then
 		    if [[ -f $file ]]; then
-		        if [[ "$FILENAME" != "bootstrap.sh" && "$FILENAME" != "pom.sh" && "$FILENAME" != "shpm.sh" ]]; then
+		        if [[ "$FILENAME" != "bootstrap.sh" && "$FILENAME" != "pom.sh" && "$FILENAME" != "shpm.sh" && "$FILENAME" == *".sh" ]]; then
 		            shpm_log " - Moving file $file to $SRC_DIR_PATH ..."
 		            mv "$file" "$SRC_DIR_PATH"
 		        else

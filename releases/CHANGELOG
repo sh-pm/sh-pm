@@ -6,7 +6,9 @@ v4.0.0
 - sh-pm pass use shellcheck if it exists when run tests;
 - Update pass to use only git repositories;
 - Remove REPOSITORY from pom.sh;
+- sh-pm now publish releases only in GitHub;
 - Add release 4.0.0 in releases folder;
+- Fixes error before changes;
 
 ==============================================================================
 V3.3.0

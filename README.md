@@ -145,6 +145,6 @@ Log utilities inspired in log4j: <a href="https://github.com/sh-pm/sh-logger" ta
 Functions to write and run unit tests of your project function's: <a href="https://github.com/sh-pm/sh-unit" target="_blank">https://github.com/sh-pm/sh-unit</a>
 
 #### sh-commons
-Common utilities for manipulation of date and time, string, IP and more: <a href="https://github.com/sh-pm/sh-commons" target="_blank">https://github.com/sh-pm/sh-commons</a>
+Common utilities for manipulation of date and time, string, IP, param validation and more: <a href="https://github.com/sh-pm/sh-commons" target="_blank">https://github.com/sh-pm/sh-commons</a>
 
 
