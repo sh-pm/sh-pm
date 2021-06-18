@@ -72,7 +72,7 @@ The command will download and extract dependency to local sh-pm repository locat
 Example:
 ```
 #!/bin/bash
-source ./bootstrap.sh
+source ../../..//bootstrap.sh
 
 include_lib sh-logger
 
@@ -102,7 +102,7 @@ The command will download and extract dependency to local sh-pm repository locat
 Example: Let's force user to pass exactly 1 param to script
 ```
 #!/bin/bash
-source ./bootstrap.sh
+source ../../..//bootstrap.sh
 
 include_lib sh-logger
 include_lib sh-commons
