@@ -93,7 +93,7 @@ Don't create function's for this, because already exists a dependency called **s
 ```
 declare -A DEPENDENCIES=( \
 	[sh-logger]=v1.4.0@github.com/sh-pm \
-	[sh-commons]=v2.0.0@github.com/sh-pm \
+	[sh-commons]=v2.2.3@github.com/sh-pm \
 );
 ```
 OBS: In multiline command's don't put spaces before \ character: it will cause errors similar below:
