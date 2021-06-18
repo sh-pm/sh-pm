@@ -44,48 +44,25 @@ $ ./shpm.sh init
 ```
 It will create **src/main/sh** folder to store your scripts (_Your shell script code automatically will be moved to this folder_) and **src/test/sh** to store your tests. 
 
-Finish: After the 5 steps, your project, is ready to use dependencies downloaded!
-
-## Very Important!
-### Only 1 version of each dependency per project! 
-Even though several scripts refer to several different versions of the same lib, **only one version is used: the version that is in the project's _pom.sh_**.
-
-**Reason**: if several different versions are loaded, and certain functions and / or variables exist in more than one version, the environment is only valid for what was defined in the last load. The definitions of variables and functions of previously loaded versions will be overwritten by the most recent uploads and this can cause unpredictable behavior.
-
-### "Boolean values":
-  * TRUE=0
-  * FALSE=1
-
-## Existing dependencies available
-<p align="center">
-  <img src="https://raw.githubusercontent.com/sh-pm/sh-pm/master/doc/img/shpm-components.png" />
-</p>
-The dependencies/packages/libraries below are available in shpmcenter.com:
-
-#### sh-logger
-Log utilities inspired in log4j: <a href="https://github.com/sh-pm/sh-logger" target="_blank">https://github.com/sh-pm/sh-logger</a>
-
-#### sh-unit
-Functions to write and run unit tests of your project function's: <a href="https://github.com/sh-pm/sh-unit" target="_blank">https://github.com/sh-pm/sh-unit</a>
-
-#### sh-commons
-Common utilities for manipulation of date and time, string, IP and more: <a href="https://github.com/sh-pm/sh-commons" target="_blank">https://github.com/sh-pm/sh-commons</a>
-
+Finish: After the 5 steps, your project is ready to use dependencies downloaded!
 
 ## How to use existing packages;
 
 You can use functions inside dependencies by use "include's" in start of .sh file:
-#### Example: 
-Supose you go use log's, exists a dependency called **sh-logger**
+#### Example 1: Log's 
+Supose you want use log's. 
+Don't create function's for this, because already exists a dependency called **sh-logger**.
+Let's go download and use it in your project:
 
-1) Open pom.sh and insert dependency lib containg reusable code: 
+1) Open *pom.sh* and insert dependency lib containg reusable code: 
 ```
 declare -A DEPENDENCIES=( \
-	[sh_logger]=v1.4.0 
+	[sh-logger]=v1.4.0@github.com/sh-pm \
 );
 ```
+OBS: In multiline command's don't put spaces before '\' character: it will cause errors!
 
-2) Run shpm update to download dependency lib with reusable code from sh-archiva
+2) Run shpm update to download dependency lib with reusable code from GitHub
 ```
 $ ./shpm.sh update
 ```
@@ -101,3 +78,60 @@ include_lib sh-logger
 
 log_info "Work's fine!" # log_info is a reusable function inside sh-logger lib
 ```
+
+### Example 2: Ensure correct number of params
+Supose you want force user to pass params to your script.
+Don't create function's for this, because already exists a dependency called **sh-commons** containing many common utilitary functions.
+
+1) Open *pom.sh* and insert dependency lib containg reusable code: 
+```
+declare -A DEPENDENCIES=( \
+	[sh-logger]=v1.4.0@github.com/sh-pm \
+	[sh-commons]=v2.0.0@github.com/sh-pm \
+);
+```
+OBS: In multiline command's don't put spaces before '\' character: it will cause errors!
+
+2) Run shpm update to download dependency lib with reusable code from GitHub
+```
+$ ./shpm.sh update
+```
+The command will download and extract dependency to local sh-pm repository located in $ROOT_FOLDER_PATH/src/sh/lib
+
+3) Include dependency lib in file(s) and use reusable code
+Example: Let's force user to pass exactly 1 param to script
+```
+#!/bin/bash
+source ./bootstrap.sh
+
+include_lib sh-logger
+include_lib sh-commons
+
+ensure_number_params_correct 1 $@
+
+log_info "Work's fine!" # log_info is a reusable function inside sh-logger lib
+```
+
+
+## Very Important!
+### Only 1 version of each dependency per project! 
+Even though several scripts refer to several different versions of the same lib, **only one version is used: the version that is in the project's _pom.sh_**.
+
+**Reason**: if several different versions are loaded, and certain functions and / or variables exist in more than one version, the environment is only valid for what was defined in the last load. The definitions of variables and functions of previously loaded versions will be overwritten by the most recent uploads and this can cause unpredictable behavior.
+
+### "Boolean values":
+  * TRUE=0
+  * FALSE=1
+
+## Existing dependencies available
+
+#### sh-logger
+Log utilities inspired in log4j: <a href="https://github.com/sh-pm/sh-logger" target="_blank">https://github.com/sh-pm/sh-logger</a>
+
+#### sh-unit
+Functions to write and run unit tests of your project function's: <a href="https://github.com/sh-pm/sh-unit" target="_blank">https://github.com/sh-pm/sh-unit</a>
+
+#### sh-commons
+Common utilities for manipulation of date and time, string, IP and more: <a href="https://github.com/sh-pm/sh-commons" target="_blank">https://github.com/sh-pm/sh-commons</a>
+
+
