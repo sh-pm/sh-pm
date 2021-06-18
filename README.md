@@ -82,7 +82,7 @@ include_lib sh-commons
 
 log_info "Hello World SH-PM: test show some informative log text" # log_info is a reusable function inside sh-logger lib
 log_warn "Hello World SH-PM: test show some warning log text" # log_warn is a reusable function inside sh-logger lib
-log_error "Hello World SH-PM: test show some error log text" # log_error is a reusable function inside sh-logger lib
+
 ```
 
 ### Example 2: Ensure correct number of params
@@ -118,9 +118,10 @@ include_lib sh-commons
 
 log_info "Test show some informative log text" # log_info is a reusable function inside sh-logger lib
 log_warn "Test show some warning log text" # log_warn is a reusable function inside sh-logger lib
-log_error "Test show some error log text" # log_warn is a reusable function inside sh-logger lib
 
 ensure_number_params_correct 1 $@
+
+log_info "Content of param received: $1"
 
 ```
 
