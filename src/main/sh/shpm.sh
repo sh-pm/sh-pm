@@ -309,6 +309,7 @@ update_dependency() {
 			cd /tmp/ || exit
 			
 			shpm_log "     - Cloning from https://$REPOSITORY/$DEP_ARTIFACT_ID into /tmp/$DEP_ARTIFACT_ID ..."
+			shpm_log "        $GIT_CMD clone --branch $DEP_VERSION https://$REPOSITORY/$DEP_ARTIFACT_ID.git"
 			if "$GIT_CMD" clone --branch "$DEP_VERSION" "https://""$REPOSITORY""/""$DEP_ARTIFACT_ID"".git" &>/dev/null ; then
 				DOWNLOAD_SUCESS=$TRUE
 			fi
