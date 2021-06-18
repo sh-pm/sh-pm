@@ -320,7 +320,7 @@ update_dependency() {
 			cd "$LIB_DIR_PATH""/""$DEP_FOLDER_NAME" || exit
 			
 			shpm_log "   - Copy artifacts from /tmp/$DEP_ARTIFACT_ID to $LIB_DIR_PATH/$DEP_FOLDER_NAME ..."
-			cp "/tmp/$DEP_ARTIFACT_ID/src/main/sh/*" .
+			cp "/tmp/$DEP_ARTIFACT_ID/src/main/sh/"* .
 			cp "/tmp/$DEP_ARTIFACT_ID/pom.sh" .
 			
 			cd /tmp || exit
