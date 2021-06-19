@@ -584,7 +584,13 @@ send_to_sh_archiva () {
 
 run_shellcheck() {
     local SHELLCHECK_CMD
+    local SHELLCHECK_LOG_FILENAME
+    local GEDIT_CMD
+    
     SHELLCHECK_CMD=$(which shellcheck)
+    SHELLCHECK_LOG_FILENAME="shellcheck.log"
+    
+    GEDIT_CMD=$(which gedit)
 
 	shpm_log_operation "Running ShellCheck in .sh files ..."
     
@@ -603,10 +609,19 @@ run_shellcheck() {
 	    
 	    for FILE_TO_CHECK in $SRC_DIR_PATH/*.sh; do        
 	    
-	    	if "$SHELLCHECK_CMD" -x -e SC1090 -e SC1091 "$FILE_TO_CHECK" > "$TARGET_DIR_PATH/shellcheck.log"; then
+	    	if "$SHELLCHECK_CMD" -x -e SC1090 -e SC1091 "$FILE_TO_CHECK" > "$TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME"; then
 	    		shpm_log "$FILE_TO_CHECK passed in shellcheck"
 	    	else
-	    		shpm_log "$FILE_TO_CHECK have shellcheck errors. See log in $TARGET_DIR_PATH"
+	    		shpm_log "$FILE_TO_CHECK have shellcheck errors."
+	    		shpm_log "See log in $TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME"
+	    		
+	    		sed -i '1s/^/=== ERRORS FOUND BY ShellCheck tool: === /' "$TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME"
+	    		
+	    		if [[ "$GEDIT_CMD" != "" ]]; then
+	    			shpm_log "Open $TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME ..."
+	    			"$GEDIT_CMD" "$TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME"
+	    		fi
+	    		
 	    		exit 1
 	    	fi
     	done;
