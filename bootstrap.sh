@@ -36,6 +36,10 @@ if [[ -z "$TEST_DIR_SUBPATH" ]]; then
 	TEST_DIR_SUBPATH="src/test/sh"
 fi
 
+if [[ -z "$TARGET_DIR_SUBPATH" ]]; then
+	TARGET_DIR_SUBPATH="target"
+fi
+
 # -- Main Path's ------------------
 if [[ -z "$ROOT_DIR_PATH" ]]; then
 	THIS_SCRIPT_FOLDER_PATH="$( dirname "$(realpath "${BASH_SOURCE[0]}")" )"
@@ -59,7 +63,7 @@ if [[ -z "$TEST_DIR_PATH" ]]; then
 fi
 
 if [[ -z "$TARGET_DIR_PATH" ]]; then
-	TARGET_DIR_PATH="$ROOT_DIR_PATH/target"
+	TARGET_DIR_PATH="$ROOT_DIR_PATH/$TARGET_DIR_SUBPATH"
 	internal_debug "TARGET_DIR_PATH: $TARGET_DIR_PATH"
 fi
 
@@ -72,6 +76,7 @@ if [[ -z "$TMP_DIR_PATH" ]]; then
 	
 	FOLDERNAME_4TEST="folder4test"
 	FILENAME_4TEST="file4test"
+	PROJECTNAME_4TEST="sh-project-only-4tests"
 fi
 
 # =================================

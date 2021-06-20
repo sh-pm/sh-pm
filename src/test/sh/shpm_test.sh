@@ -12,19 +12,21 @@ include_file "$LIB_DIR_PATH/sh-unit-v1.5.5/asserts.sh"
 # ======================================
 # Teardown
 # ======================================
-trap "remove_file_and_folder_4tests" EXIT
-remove_file_and_folder_4tests() {
+trap "remove_file_and_folders_4tests" EXIT
+remove_file_and_folders_4tests() {
 	local ACTUAL_DIR
 	ACTUAL_DIR=$(pwd)
 
-    echo "Remove $FOLDERNAME_4TEST and $FILENAME_4TEST in $TMP_DIR_PATH before test finish ..."
-	
 	cd "$TMP_DIR_PATH" || exit 1
-	
+
+	echo "Removing $FOLDERNAME_4TEST"	
 	rm -rf "$FOLDERNAME_4TEST"
+	
+	echo "Removing $FILENAME_4TEST"
 	rm -f "$FILENAME_4TEST"
 	
-	echo "Removed!"
+	echo "Removing $PROJECTNAME_4TEST"
+	rm -rf "$PROJECTNAME_4TEST"
 	
 	cd "$ACTUAL_DIR" || exit 1
 }
@@ -45,13 +47,13 @@ test_evict_catastrophic_remove_when_ROOT_DIR_PATH_is_unset() {
 }
 
 test_create_path_if_not_exists(){
-	remove_file_and_folder_4tests
+	remove_file_and_folders_4tests
 	
 	local PATH_TARGET
 	PATH_TARGET="$TMP_DIR_PATH/$FOLDERNAME_4TEST/subfolder1/subfolder1_1"
 	
 	if [[ ! -z "$PATH_TARGET" ]]; then
-		remove_file_and_folder_4tests
+		remove_file_and_folders_4tests
 	fi
 	
 	if [[ -d "$PATH_TARGET" ]]; then
@@ -70,11 +72,11 @@ test_create_path_if_not_exists(){
 		assert_fail "fail try creating already existing path"
 	fi
 	
-	remove_file_and_folder_4tests
+	remove_file_and_folders_4tests
 }
 
 test_remove_folder_if_exists() {
-	remove_file_and_folder_4tests
+	remove_file_and_folders_4tests
 	
 	local PATH_TARGET
 	
@@ -97,11 +99,11 @@ test_remove_folder_if_exists() {
 	remove_folder_if_exists "$PATH_TARGET"
 	assert_true "$?" || assert_fail "fail removing existing complete path"
 	
-	remove_file_and_folder_4tests
+	remove_file_and_folders_4tests
 }
 
 test_remove_tar_gz_from_folder() {
-	remove_file_and_folder_4tests
+	remove_file_and_folders_4tests
 	
 	local TARGET_FOLDER
 	local TARGZ_FILE
@@ -128,11 +130,11 @@ test_remove_tar_gz_from_folder() {
 	remove_tar_gz_from_folder "$TARGET_FOLDER"
 	assert_true "$?" || assert_fail "fail receivind folder without .tar.gz file inside folder"
 	
-	remove_file_and_folder_4tests
+	remove_file_and_folders_4tests
 }
 
 test_remove_file_if_exists() {
-	remove_file_and_folder_4tests
+	remove_file_and_folders_4tests
 
 	local PATH_TARGET
 	
@@ -156,7 +158,52 @@ test_remove_file_if_exists() {
 	remove_file_if_exists "$PATH_TARGET"
 	assert_true "$?" || assert_fail "fail removing existing complete path"
 	
-	remove_file_and_folder_4tests
+	remove_file_and_folders_4tests
+}
+
+test_shpm_log() {
+	local STRING="teste 123 teste"
+	local STRING_LOGGED=$( shpm_log "$STRING" )
+	assert_equals "$STRING" "$STRING_LOGGED"
+}
+
+test_shpm_log_operation() {
+	local EXPECTED
+EXPECTED='================================================================
+sh-pm: teste 123 teste
+================================================================'
+	local STRING_LOGGED=$( shpm_log_operation "teste 123 teste" )
+	assert_equals "$EXPECTED" "$STRING_LOGGED"
+}
+
+test_clean_release() {
+	local PROJECT_DIR
+	local PROJECT_TARGET_DIR
+	local PROJECT_RELEASES_DIR
+	local RESULT
+	
+	download_from_git_to_tmp_folder "github.com/sh-pm" "sh-project-only-4tests" "v0.1.0"
+	
+	PROJECT_DIR="$TMP_DIR_PATH/sh-project-only-4tests"
+	
+	PROJECT_TARGET_DIR="$PROJECT_DIR/$TARGET_DIR_SUBPATH"	
+	PROJECT_RELEASES_DIR="$PROJECT_DIR/releases"
+	
+	RESULT=$( find "$PROJECT_RELEASES_DIR" -name *.tar.gz )
+	assert_false "$RESULT" "" || assert_fail "files *.tar.gz not found in $PROJECT_RELEASES_DIR"
+	
+	RESULT=$( find "$PROJECT_TARGET_DIR" -name *.tar.gz )
+	assert_false "$RESULT" ""  || assert_fail "files *.tar.gz not found in $PROJECT_TARGET_DIR"
+	
+	clean_release "$PROJECT_DIR"
+	
+	RESULT=$( find "$PROJECT_RELEASES_DIR" -name *.tar.gz )
+	assert_true "$RESULT" "" || assert_fail "before clean found files *.tar.gz in $PROJECT_RELEASES_DIR"
+	
+	RESULT=$( find "$PROJECT_TARGET_DIR" -name *.tar.gz )
+	assert_true "$RESULT" "" || assert_fail "before clean found files *.tar.gz in $PROJECT_TARGET_DIR"
+	
+	remove_folder_if_exists "$PROJECT_DIR"
 }
 
 run_all_tests_in_this_script

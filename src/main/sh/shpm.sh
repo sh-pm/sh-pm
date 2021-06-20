@@ -203,7 +203,7 @@ run_sh_pm() {
 	fi
 	
 	if [[ "$CLEAN" == "true" ]];  then
-		clean_release
+		clean_release "$ROOT_DIR_PATH"
 	fi
 	
 	if [[ "$TEST" == "true" ]];  then
@@ -261,19 +261,18 @@ remove_tar_gz_from_folder() {
 }
 
 clean_release() {
-	local ACTUAL_DIR
+	local PROJECT_DIR
 	local RELEASES_DIR
 	
-	ACTUAL_DIR=$(pwd)
-	RELEASES_DIR="$ROOT_DIR_PATH/releases"
+	PROJECT_DIR="$1"
+	
+	RELEASES_DIR="$PROJECT_DIR/releases"
 
 	shpm_log_operation "Cleaning release"
 	
-	remove_tar_gz_from_folder "$TARGET_DIR_PATH"
+	remove_tar_gz_from_folder "$PROJECT_DIR/$TARGET_DIR_SUBPATH"
 	
 	remove_tar_gz_from_folder "$RELEASES_DIR"
-		
-	cd "$ACTUAL_DIR" || exit
 }
 
 update_dependencies() {
@@ -306,7 +305,7 @@ uninstall_release () {
 	
 	ACTUAL_DIR="$(pwd)"
 	
-	clean_release
+	clean_release "$ROOT_DIR_PATH"
 	
 	build_release
 	
@@ -523,7 +522,7 @@ update_dependency() {
 
 build_release() {
 
-    clean_release
+    clean_release "$ROOT_DIR_PATH"
 
 	run_all_tests
 	
@@ -629,7 +628,7 @@ publish_release() {
 
 	local VERBOSE=$1
 
-	clean_release
+	clean_release "$ROOT_DIR_PATH"
 	
 	build_release
 
@@ -661,7 +660,7 @@ send_to_sh_archiva () {
 		exit 1
 	fi
 
-	clean_release
+	clean_release "$ROOT_DIR_PATH"
 	
 	build_release
 
