@@ -432,17 +432,15 @@ shpm_update_itself_after_git_clone() {
     fi
 }
 
-set_dependency_repository_and_version(){
+set_dependency_repository(){
 	local DEP_ARTIFACT_ID="$1"
-	local DEP_VERSION
-	local DEP_REPOSITORY
+	local R_DEP_REPOSITORY
 	
 	local ARTIFACT_DATA="${DEPENDENCIES[$DEP_ARTIFACT_ID]}"
 	if [[ "$ARTIFACT_DATA" == *"@"* ]]; then
-		DEP_VERSION=$( echo "$ARTIFACT_DATA" | cut -d "@" -f 1 | xargs ) #xargs is to trim string!
-		DEP_REPOSITORY=$( echo "$ARTIFACT_DATA" | cut -d "@" -f 2 | xargs ) #xargs is to trim string!
+		R_DEP_REPOSITORY=$( echo "$ARTIFACT_DATA" | cut -d "@" -f 2 | xargs ) #xargs is to trim string!
 		
-		if [[ "$DEP_REPOSITORY" == "" ]]; then
+		if [[ "$R_DEP_REPOSITORY" == "" ]]; then
 			shpm_log "Error in $DEP_ARTIFACT_ID dependency: Inform a repository after '@' in $DEPENDENCIES_FILENAME"
 			exit 1
 		fi
@@ -451,8 +449,22 @@ set_dependency_repository_and_version(){
 		exit 1
 	fi
 	
-	eval "$2=$REPOSITORY"
-	eval "$3=$DEP_VERSION"
+	eval "$2=$R_DEP_REPOSITORY"
+}
+
+set_dependency_version(){
+	local DEP_ARTIFACT_ID="$1"
+	local R_DEP_VERSION	
+	
+	local ARTIFACT_DATA="${DEPENDENCIES[$DEP_ARTIFACT_ID]}"
+	if [[ "$ARTIFACT_DATA" == *"@"* ]]; then
+		R_DEP_VERSION=$( echo "$ARTIFACT_DATA" | cut -d "@" -f 1 | xargs ) #xargs is to trim string!						
+	else
+		shpm_log "Error in $DEP_ARTIFACT_ID dependency: Inform a repository after '@' in $DEPENDENCIES_FILENAME"
+		exit 1
+	fi
+	
+	eval "$2=$R_DEP_VERSION"
 }
 
 update_dependency() {
@@ -471,7 +483,8 @@ update_dependency() {
 	
 	create_path_if_not_exists "$LIB_DIR_PATH" 
 	
-	set_dependency_repository_and_version "$DEP_ARTIFACT_ID" REPOSITORY DEP_VERSION 
+	set_dependency_repository "$DEP_ARTIFACT_ID" REPOSITORY 
+	set_dependency_version "$DEP_ARTIFACT_ID" DEP_VERSION
 
 	DEP_FOLDER_NAME="$DEP_ARTIFACT_ID""-""$DEP_VERSION"
 	PATH_TO_DEP_IN_PROJECT="$LIB_DIR_PATH/$DEP_FOLDER_NAME"
