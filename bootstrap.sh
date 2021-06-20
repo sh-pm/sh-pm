@@ -63,6 +63,17 @@ if [[ -z "$TARGET_DIR_PATH" ]]; then
 	internal_debug "TARGET_DIR_PATH: $TARGET_DIR_PATH"
 fi
 
+if [[ -z "$TMP_DIR_PATH" ]]; then
+    # WARNING: Used in 
+    #   - secure rm -rf executions
+    #   - unit tests
+	TMP_DIR_PATH="/tmp"
+	internal_debug "TMP_DIR_PATH: $TMP_DIR_PATH"
+	
+	FOLDERNAME_4TEST="folder4test"
+	FILENAME_4TEST="file4test"
+fi
+
 # =================================
 # Load dependencies
 # =================================
