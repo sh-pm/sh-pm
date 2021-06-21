@@ -8,7 +8,16 @@ Welcome to the <b>SH-PM</b>: the <b>SH</b>ell script <b>P</b>ackage <b>M</b>anag
 
 ## How to install in your project
 
-To quickly install it in your project, you have perform only 5 steps: 
+**In folder containing you sh script, run code below in a terminal:**
+
+```
+SHPM_LAST_VERSION="v4.0.0" && ACTUAL_DIR=$(pwd) && cd /tmp && rm -rf sh-pm-* || true && wget https://github.com/sh-pm/sh-pm/raw/master/releases/sh-pm-"$SHPM_LAST_VERSION".tar.gz  && tar -xvzf sh-pm-"$SHPM_LAST_VERSION".tar.gz && cd "$ACTUAL_DIR" && cp /tmp/sh-pm-"$SHPM_LAST_VERSION"/* . && rm -rf /tmp/sh-pm-* && ./shpm.sh update && ./shpm.sh init && cd src/main/sh
+```
+
+OR ...
+
+
+**Perform 5 steps:** 
 
 #### Step 1 -  Download last version
 
