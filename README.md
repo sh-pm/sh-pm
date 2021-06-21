@@ -10,7 +10,7 @@
 In folder containing you sh script, run code below in a terminal:
 
 ```
-SHPM_LAST_VERSION="v4.0.0" && ACTUAL_DIR=$(pwd) && cd /tmp && rm -rf sh-pm-* || true && wget https://github.com/sh-pm/sh-pm/raw/master/releases/sh-pm-"$SHPM_LAST_VERSION".tar.gz  && tar -xvzf sh-pm-"$SHPM_LAST_VERSION".tar.gz && cd "$ACTUAL_DIR" && cp /tmp/sh-pm-"$SHPM_LAST_VERSION"/* . && rm -rf /tmp/sh-pm-* && ./shpm.sh update && ./shpm.sh init && cd src/main/sh
+SHPM_LAST_VERSION="v4.1.0" && ACTUAL_DIR=$(pwd) && cd /tmp && rm -rf sh-pm-* || true && wget https://github.com/sh-pm/sh-pm/raw/master/releases/sh-pm-"$SHPM_LAST_VERSION".tar.gz  && tar -xvzf sh-pm-"$SHPM_LAST_VERSION".tar.gz && cd "$ACTUAL_DIR" && cp /tmp/sh-pm-"$SHPM_LAST_VERSION"/* . && rm -rf /tmp/sh-pm-* && ./shpm.sh update && ./shpm.sh init && cd src/main/sh
 ```
 
 ## How to reuse existing shell script code:
