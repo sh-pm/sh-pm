@@ -117,6 +117,7 @@ print_help() {
 	echo "  init                  Initialize sh-pm expect files and folders project structure" 
     echo "  autoupdate            Update itself"
 	echo "  uninstall             Remove from local repository $LIB_DIR_SUBPATH"
+	echo "  coverage              Show test coverage"
 	echo ""
 	echo "EXAMPLES:"
 	echo "  ./shpm update"
@@ -142,6 +143,7 @@ run_sh_pm() {
 	local AUTOUPDATE=false
 	local UNINSTALL=false
 	local INIT=false	
+	local COVERAGE=false
 	
 	local VERBOSE=false	
 	
@@ -192,6 +194,9 @@ run_sh_pm() {
 			if [[ "$ARG" == "init" ]];  then
 				INIT="true"
 			fi
+			if [[ "$ARG" == "coverage" ]];  then
+				COVERAGE="true"
+			fi
 			if [[ "$ARG" == "-v" ]];  then
 				VERBOSE="true"
 			fi
@@ -232,7 +237,19 @@ run_sh_pm() {
 		
 	if [[ "$INIT" == "true" ]];  then
 		init_project_structure
-	fi			
+	fi
+	
+	if [[ "$COVERAGE" == "true" ]];  then
+		local PERCENT=$( run_coverage_analysis )
+		local MIN_PERCENT_COVERAGE="80.0"
+		if (( $(echo "$PERCENT < $MIN_PERCENT_COVERAGE" | bc -l) )); then
+  			run_coverage_analysis "-v"
+  			shpm_log "Test Coverage FAIL! $PERCENT% (min=$MIN_PERCENT_COVERAGE%)"
+  		else
+  		    shpm_log "Test Coverage OK: $PERCENT% (min=$MIN_PERCENT_COVERAGE%)"
+		fi
+		
+	fi						
 }
 
 remove_tar_gz_from_folder() {
@@ -870,7 +887,87 @@ init_project_structure() {
 	exit 0
 }
 
+coverage_echo() {
+	local VERBOSE=$1
+	local MSG=$2
+	local COLOR=$3
+	
+	if [[ "$VERBOSE" == "-v" ]]; then		
+		if [[ "$COLOR" == "" ]]; then
+			echo -e "$MSG"
+		fi
+		
+		if [[ "$COLOR" == "red" ]]; then
+			echo -e "${RED} $MSG ${NC}"
+		fi
+		
+		if [[ "$COLOR" == "green" ]]; then
+			echo -e "${GREEN} $MSG ${NC}"
+		fi
+	fi
+}
 
+run_coverage_analysis() {
+	VERBOSE="$1"
+
+    local ESC_CHAR='\033'
+	local RED=$ESC_CHAR'[0;31m'
+	local GREEN=$ESC_CHAR'[0;32m'	
+	local NC=$ESC_CHAR'[0m' # No Color
+
+	FILE_COUNT=0
+	FUNCTIONS_COUNT=0
+	FUNCTIONS_WITH_TEST_COUNT=0
+	
+	for filepath in $(find "$SRC_DIR_PATH" -name "*.sh"); do 
+		FILE_COUNT=$((FILE_COUNT+1))
+		 
+		coverage_echo "$VERBOSE" "--- $filepath --------------------------"
+		FUNCTIONS_TO_TEST=( `grep -E '^[[:space:]]*([[:alnum:]_]+[[:space:]]*\(\)|function[[:space:]]+[[:alnum:]_]+)' $filepath | tr \(\)\}\{ ' ' | sed 's/^[ \t]*//;s/[ \t]*$//'` );
+		  
+		filename="$( basename "$filepath" )"
+		test_filename="${filename//.sh/}_test.sh"
+		test_filepath="$TEST_DIR_PATH/$test_filename"
+		 
+		if [[ -f "$test_filepath" ]]; then
+			EXISTING_TEST_FUNCTIONS=( `grep -E '^[[:space:]]*([[:alnum:]_]+[[:space:]]*\(\)|function[[:space:]]+[[:alnum:]_]+)' $test_filepath | tr \(\)\}\{ ' ' | sed 's/^[ \t]*//;s/[ \t]*$//'` );
+		fi
+		
+		FILE_FUNCTIONS_COUNT=0
+		FILE_FUNCTIONS_WITH_TEST_COUNT=0
+		for function in ${FUNCTIONS_TO_TEST[@]}; do
+			FILE_FUNCTIONS_COUNT=$((FILE_FUNCTIONS_COUNT+1))
+			FUNCTIONS_COUNT=$((FUNCTIONS_COUNT+1))
+			
+			foundtest=$FALSE
+			for test_function in ${EXISTING_TEST_FUNCTIONS[@]}; do
+				if [[ "$test_function" == "test_""$function" ]]; then
+					foundtest=$TRUE
+					FILE_FUNCTIONS_WITH_TEST_COUNT=$((FILE_FUNCTIONS_WITH_TEST_COUNT+1))
+					FUNCTIONS_WITH_TEST_COUNT=$((FUNCTIONS_WITH_TEST_COUNT+1))
+					break;
+				fi
+			done;
+			
+			if [[ "$foundtest" == "$FALSE" ]]; then
+			   coverage_echo "$VERBOSE" "   $function" "red"
+			else
+			   coverage_echo "$VERBOSE" "   $function" "green"
+			fi
+		done
+		
+		PERCENT_COVERAGE=$(bc <<< "scale=2; $FILE_FUNCTIONS_WITH_TEST_COUNT / $FILE_FUNCTIONS_COUNT * 100")
+		
+		coverage_echo "$VERBOSE" ""
+		coverage_echo "$VERBOSE" "$FILE_FUNCTIONS_COUNT functions found."
+	
+	done
+	
+	coverage_echo "$VERBOSE" "--------------------------"
+	coverage_echo "$VERBOSE" "$FILE_COUNT .sh files found"
+	
+	echo "$PERCENT_COVERAGE"
+}
 
 run_sh_pm "$@"
 
