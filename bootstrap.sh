@@ -4,7 +4,7 @@
 # Internal Log
 # =================================
 internal_debug() {
-	local ENABLE_DEBUG="false"
+	local ENABLE_DEBUG="true"
 	if [[ "$ENABLE_DEBUG" == "true" ]]; then
 		echo "$1"
 	fi

@@ -1,3 +1,4 @@
+GIT_REMOTE_REPOSITORY=github.com/sh-pm
 GROUP_ID=bash
 ARTIFACT_ID=sh-pm
 VERSION=v4.1.0

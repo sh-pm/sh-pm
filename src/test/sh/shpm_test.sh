@@ -10,6 +10,13 @@ include_lib sh-unit
 include_file "$LIB_DIR_PATH/sh-unit-v1.5.5/asserts.sh"
 
 # ======================================
+# SetUp
+# ======================================
+ACTUAL_ROOT_DIR_PATH="$ROOT_DIR_PATH"
+
+
+
+# ======================================
 # Teardown
 # ======================================
 trap "remove_file_and_folders_4tests" EXIT
@@ -29,6 +36,9 @@ remove_file_and_folders_4tests() {
 	rm -rf "$PROJECTNAME_4TEST"
 	
 	cd "$ACTUAL_DIR" || exit 1
+	ROOT_DIR_PATH="$ACTUAL_ROOT_DIR_PATH"
+	
+	source "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME"
 }
 
 # ======================================

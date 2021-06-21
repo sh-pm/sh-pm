@@ -522,6 +522,8 @@ update_dependency() {
 
 build_release() {
 
+	echo "===> $ROOT_DIR_PATH"
+
     clean_release "$ROOT_DIR_PATH"
 
 	run_all_tests
@@ -544,7 +546,6 @@ build_release() {
 	
 	TARGET_FOLDER="$ARTIFACT_ID""-""$VERSION"
 	
-	echo "$TARGET_DIR_PATH/$TARGET_FOLDER"
 	create_path_if_not_exists "$TARGET_DIR_PATH/$TARGET_FOLDER"
 
 	shpm_log "Coping .sh files from $SRC_DIR_PATH/* to $TARGET_DIR_PATH/$TARGET_FOLDER ..."
@@ -552,14 +553,14 @@ build_release() {
 	
 	# if not build itself
 	if [[ ! -f "$SRC_DIR_PATH/shpm.sh" ]]; then
-		shpm_log "Coping pom.sh ..."
-		cp "$ROOT_DIR_PATH/pom.sh" "$TARGET_DIR_PATH/$TARGET_FOLDER"
+		shpm_log "Coping $DEPENDENCIES_FILENAME ..."
+		cp "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME" "$TARGET_DIR_PATH/$TARGET_FOLDER"
 	else 
-		shpm_log "Creating pom.sh ..."
-	    cp "$SRC_DIR_PATH/../resources/template_pom.sh" "$TARGET_DIR_PATH/$TARGET_FOLDER/pom.sh"
+		shpm_log "Creating $DEPENDENCIES_FILENAME ..."
+	    cp "$SRC_DIR_PATH/../resources/template_$DEPENDENCIES_FILENAME" "$TARGET_DIR_PATH/$TARGET_FOLDER/$DEPENDENCIES_FILENAME"
 	    
-	    shpm_log "Coping bootstrap.sh ..."
-    	cp "$ROOT_DIR_PATH/bootstrap.sh" "$TARGET_DIR_PATH/$TARGET_FOLDER"
+	    shpm_log "Coping $BOOTSTRAP_FILENAME from $ROOT_DIR_PATH ..."
+    	cp "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" "$TARGET_DIR_PATH/$TARGET_FOLDER"
 	fi
 	
 	shpm_log "Add sh-pm comments in .sh files ..."
@@ -568,12 +569,12 @@ build_release() {
 		
 	# if not build itself
 	if [[ ! -f $TARGET_DIR_PATH/$TARGET_FOLDER/"shpm.sh" ]]; then
-		shpm_log "Removing bootstrap.sh sourcing command from .sh files ..."
-		sed -i 's/source \.\/bootstrap.sh//g' ./*.sh		
-		sed -i 's/source \.\.\/\.\.\/\.\.\/bootstrap.sh//g' ./*.sh
+		shpm_log "Removing $BOOTSTRAP_FILENAME sourcing command from .sh files ..."
+		sed -i "s/source \.\/$BOOTSTRAP_FILENAME//g" ./*.sh		
+		sed -i "s/source \.\.\/\.\.\/\.\.\/$BOOTSTRAP_FILENAME//g" ./*.sh
 	else
-		shpm_log "Update bootstrap.sh sourcing command from .sh files ..."
-	   	sed -i 's/source \.\.\/\.\.\/\.\.\/bootstrap.sh/source \.\/bootstrap.sh/g' shpm.sh	   	
+		shpm_log "Update $BOOTSTRAP_FILENAME sourcing command from .sh files ..."
+	   	sed -i "s/source \.\.\/\.\.\/\.\.\/$BOOTSTRAP_FILENAME/source \.\/$BOOTSTRAP_FILENAME/g" shpm.sh	   	
 	fi
 	
 	shpm_log "Package: Compacting .sh files ..."
@@ -768,12 +769,13 @@ run_shellcheck() {
 
 run_all_tests() {
 
+	local ACTUAL_DIR
+	ACTUAL_DIR=$(pwd)
+	
 	run_shellcheck
 
 	shpm_log_operation "Searching unit test files to run ..."
 
-	local ACTUAL_DIR
-	ACTUAL_DIR=$(pwd)
 
 	if [[ -d "$TEST_DIR_PATH" ]]; then
 	
@@ -798,6 +800,7 @@ run_all_tests() {
 	fi
 	
 	cd "$ACTUAL_DIR" || exit 1
+
 	shpm_log "Done"
 }
 
@@ -870,3 +873,4 @@ init_project_structure() {
 
 
 run_sh_pm "$@"
+
