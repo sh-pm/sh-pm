@@ -2,6 +2,8 @@
 
 source ../../../bootstrap.sh
 
+SHPM_LOG_DISABLED="$FALSE"
+
 #-----------------------------------
 evict_catastrophic_remove() {
 	# Evict catastrophic rm's when ROOT_DIR_PATH not set 
@@ -89,13 +91,24 @@ remove_file_if_exists() {
 }
 
 shpm_log() {
-	echo "$1"
+	local MSG=$1
+	local COLOR=$2
+	
+    if [[ "$SHPM_LOG_DISABLED" != "$TRUE" ]]; then
+		if [[ "$COLOR" == "red" ]]; then
+			echo -e "${ECHO_COLOR_RED}$MSG${ECHO_COLOR_NC}"			
+		elif [[ "$COLOR" == "green" ]]; then
+			echo -e "${ECHO_COLOR_GREEN}$MSG${ECHO_COLOR_NC}"		
+		else
+			echo -e "$MSG"
+		fi
+	fi
 }
 
 shpm_log_operation() {
-    echo "================================================================"
-	echo "sh-pm: $1"
-	echo "================================================================"
+    shpm_log "================================================================"
+	shpm_log "sh-pm: $1"
+	shpm_log "================================================================"
 }
 
 print_help() {
@@ -240,15 +253,7 @@ run_sh_pm() {
 	fi
 	
 	if [[ "$COVERAGE" == "true" ]];  then
-		local PERCENT=$( run_coverage_analysis )
-		local MIN_PERCENT_COVERAGE="80.0"
-		if (( $(echo "$PERCENT < $MIN_PERCENT_COVERAGE" | bc -l) )); then
-  			run_coverage_analysis "-v"
-  			shpm_log "Test Coverage FAIL! $PERCENT% (min=$MIN_PERCENT_COVERAGE%)"
-  		else
-  		    shpm_log "Test Coverage OK: $PERCENT% (min=$MIN_PERCENT_COVERAGE%)"
-		fi
-		
+		run_coverage_analysis		
 	fi						
 }
 
@@ -887,42 +892,50 @@ init_project_structure() {
 	exit 0
 }
 
-coverage_echo() {
-	local VERBOSE=$1
-	local MSG=$2
-	local COLOR=$3
+run_coverage_analysis() {
+	local PERCENT
+	local COVERAGE_STR_LOG
 	
-	if [[ "$VERBOSE" == "-v" ]]; then		
-		if [[ "$COLOR" == "" ]]; then
-			echo -e "$MSG"
-		fi
+	shpm_log_operation "Test coverage analysis"
+	
+	PERCENT=$(do_coverage_analysis)
+	
+	NOT_HAVE_MINIMUM_COVERAGE=$(echo "${PERCENT} < ${MIN_PERCENT_TEST_COVERAGE}"  | bc -l)
+	
+	COVERAGE_STR_LOG="$PERCENT%. Minimum is $MIN_PERCENT_TEST_COVERAGE% (Value configured in $BOOTSTRAP_FILENAME)"
+	
+	if (( "$NOT_HAVE_MINIMUM_COVERAGE" )); then
 		
-		if [[ "$COLOR" == "red" ]]; then
-			echo -e "${RED} $MSG ${NC}"
-		fi
+		do_coverage_analysis "-v"
 		
-		if [[ "$COLOR" == "green" ]]; then
-			echo -e "${GREEN} $MSG ${NC}"
-		fi
+		shpm_log ""
+		shpm_log "Test Coverage FAIL! $COVERAGE_STR_LOG" "red"
+	else
+	    shpm_log "Test Coverage OK: $COVERAGE_STR_LOG" "green"
 	fi
 }
 
-run_coverage_analysis() {
+do_coverage_analysis() {
 	VERBOSE="$1"
-
-    local ESC_CHAR='\033'
-	local RED=$ESC_CHAR'[0;31m'
-	local GREEN=$ESC_CHAR'[0;32m'	
-	local NC=$ESC_CHAR'[0m' # No Color
 
 	FILE_COUNT=0
 	FUNCTIONS_COUNT=0
 	FUNCTIONS_WITH_TEST_COUNT=0
 	
+	if [[ "$VERBOSE" != "-v"  ]]; then
+		SHPM_LOG_DISABLED="$TRUE"
+	fi
+	
+	shpm_log ""
+	shpm_log "Run test coverage analysis in $SRC_DIR_PATH:"
+	shpm_log ""
+	
 	for filepath in $(find "$SRC_DIR_PATH" -name "*.sh"); do 
 		FILE_COUNT=$((FILE_COUNT+1))
 		 
-		coverage_echo "$VERBOSE" "--- $filepath --------------------------"
+		shpm_log ""
+		shpm_log "-- $filepath ---------------------- "
+		
 		FUNCTIONS_TO_TEST=( `grep -E '^[[:space:]]*([[:alnum:]_]+[[:space:]]*\(\)|function[[:space:]]+[[:alnum:]_]+)' $filepath | tr \(\)\}\{ ' ' | sed 's/^[ \t]*//;s/[ \t]*$//'` );
 		  
 		filename="$( basename "$filepath" )"
@@ -950,24 +963,30 @@ run_coverage_analysis() {
 			done;
 			
 			if [[ "$foundtest" == "$FALSE" ]]; then
-			   coverage_echo "$VERBOSE" "   $function" "red"
+			   shpm_log "     $function ... No tests found!" "red"
 			else
-			   coverage_echo "$VERBOSE" "   $function" "green"
+			   shpm_log "     $function ... OK" "green"
 			fi
 		done
 		
 		PERCENT_COVERAGE=$(bc <<< "scale=2; $FILE_FUNCTIONS_WITH_TEST_COUNT / $FILE_FUNCTIONS_COUNT * 100")
 		
-		coverage_echo "$VERBOSE" ""
-		coverage_echo "$VERBOSE" "$FILE_FUNCTIONS_COUNT functions found."
+		shpm_log ""
+		shpm_log "   Found $FILE_FUNCTIONS_COUNT functions in $filepath."
 	
 	done
 	
-	coverage_echo "$VERBOSE" "--------------------------"
-	coverage_echo "$VERBOSE" "$FILE_COUNT .sh files found"
+	shpm_log "--------------------------"
+	shpm_log ""
+	shpm_log "Found $FUNCTIONS_COUNT functions in $FILE_COUNT file(s) analysed."
+	shpm_log ""
 	
-	echo "$PERCENT_COVERAGE"
+	shpm_log "Coverage in %:"
+	SHPM_LOG_DISABLED="$FALSE"
+	
+	echo "$PERCENT_COVERAGE" # this is a "return" value for this function	
 }
 
 run_sh_pm "$@"
 
+grep -E '^[[:space:]]*([[:alnum:]_]+[[:space:]]*\(\)|function[[:space:]]+[[:alnum:]_]+)' $filepath | tr \(\)\}\{ ' ' | sed 's/^[ \t]*//;s/[ \t]*$//'
