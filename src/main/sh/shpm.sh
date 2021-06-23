@@ -1010,8 +1010,6 @@ do_coverage_analysis() {
 }
 
 compile_sh_project() {
-	shpm_log_operation "Compile sh project"
-	shpm_log ":| Not implement yet :( But, COME SON ... :)"
 	
 	local FILE_WITH_CAT_SH_LIBS
 	local FILE_WITH_CAT_SH_SRCS
@@ -1023,27 +1021,30 @@ compile_sh_project() {
 	FILE_WITH_SEPARATOR="$TMP_DIR_PATH/separator"
 	FILE_WITH_ALL_INCLUDES="$TMP_DIR_PATH/includes"
 	
+	REGEX_INCLUDE_LIB_AND_FILE="^include_.+i"
+	REGEX_SHEBANG="^#\!"
+	PATTERN_INCLUDE_BOOTSTRAP_FILE="source ../../../bootstrap.sh"
+	
 	find "$LIB_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_LIBS""_tmp"
 	
-	# TODO: bug in egrep ^include_.+i when compile shpm itself
-	cat "$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -v "source ../../../bootstrap.sh" | egrep -v "^#!" | egrep -v "^include_.+i" > "$FILE_WITH_CAT_SH_LIBS" #NOT
+	cat "$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" | egrep -v "$REGEX_SHEBANG" | egrep -v "$REGEX_INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_LIBS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS""_tmp"
 	
 	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_SRCS""_tmp"
 	
-	# TODO: bug in egrep ^include_.+i when compile shpm itself
-	cat "$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -v "source ../../../bootstrap.sh" | egrep -v "^#!" | egrep -v "^include_.+i" > "$FILE_WITH_CAT_SH_SRCS"
+	cat "$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" | egrep -v "$REGEX_SHEBANG" | egrep -v "$REGEX_INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_SRCS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS""_tmp"
 
 	remove_file_if_exists "$COMPILED_FILE"
 	
-	echo "# ================================================================================================" > "$FILE_WITH_SEPARATOR"
+	printf "\n# ================================================================================================\n" > "$FILE_WITH_SEPARATOR"
 	
 	cat \
 	"$FILE_WITH_SEPARATOR" "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" \
 	"$FILE_WITH_SEPARATOR" "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"  \
+	"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_LIBS" \
 	"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_SRCS" \
-	"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_LIBS" > "$COMPILED_FILE"
+		> "$COMPILED_FILE"
 	
 	sed -i '/^$/d' "$COMPILED_FILE"
 	
