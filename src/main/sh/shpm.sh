@@ -76,7 +76,9 @@ remove_file_if_exists() {
 		shpm_log "Removing file $PATH_TO_FILE ..."
 	
 		# SECURE rm -rf: move content to TMP_DIR, and execute rm -rf only inside TMP_DIR
-		mv "$PATH_TO_FILE" "$TMP_DIR_PATH"
+		if [[ "$PATH_TO_FILE" != "$TMP_DIR_PATH"/$(basename "$PATH_TO_FILE") ]]; then
+			mv "$PATH_TO_FILE" "$TMP_DIR_PATH"
+		fi
 		
 		cd "$TMP_DIR_PATH" || exit
 		
@@ -122,22 +124,22 @@ print_help() {
 	echo ""
 	echo "OPTIONS:"
     echo "  update                Download dependencies in local repository $LIB_DIR_SUBPATH"
+	echo "  init                  Create expecte sh-pm project structure with files and folders " 
 	echo "  clean                 Clean $TARGET_DIR_PATH folder"
-    echo "  test                  Run shellcheck (if exists) and tests in $TEST_DIR_SUBPATH folder"
-    echo "  build                 Create compressed file in $TARGET_DIR_PATH folder"
-	echo "  install               Install in local repository $LIB_DIR_SUBPATH"            
+    echo "  test                  Run sh-unit tests in $TEST_DIR_SUBPATH folder"
+	echo "  coverage              Show sh-unit test coverage"
+    echo "  lint                  Run ShellCheck (if exists) $SRC_DIR_SUBPATH folder"
+    echo "  package               Create compressed file in $TARGET_DIR_PATH folder"
     echo "  publish               Publish code and builded file in GitHub repositories (remote and local)"
-	echo "  init                  Initialize sh-pm expect files and folders project structure" 
-    echo "  autoupdate            Update itself"
+	echo "  install               Install in local repository $LIB_DIR_SUBPATH"            
 	echo "  uninstall             Remove from local repository $LIB_DIR_SUBPATH"
-	echo "  coverage              Show test coverage"
 	echo ""
 	echo "EXAMPLES:"
 	echo "  ./shpm update"
 	echo ""
 	echo "  ./shpm init"
 	echo ""
-	echo "  ./shpm build"
+	echo "  ./shpm package"
 	echo ""
 	echo "  ./shpm publish"
 	echo ""
@@ -147,16 +149,18 @@ run_sh_pm() {
 	local GIT_CMD
 
 	local UPDATE=false
+ 	local INIT=false
+	local LINT=false	
 	local TEST=false
-	local CLEAN=false
-	local BUILD=false
+	local COMPILE=false
+	local PACKAGE=false
 	local INSTALL=false	
 	local PUBLISH=false
 	local SKIP_SHELLCHECK=false
 	local AUTOUPDATE=false
 	local UNINSTALL=false
-	local INIT=false	
 	local COVERAGE=false
+	local CLEAN=false
 	
 	local VERBOSE=false	
 	
@@ -173,6 +177,10 @@ run_sh_pm() {
 				UPDATE="true"
 			fi
 
+			if [[ "$ARG" == "lint" ]];  then
+				LINT="true"
+			fi
+
 			if [[ "$ARG" == "test" ]];  then
 				TEST="true"
 			fi
@@ -181,8 +189,14 @@ run_sh_pm() {
 				CLEAN="true"
 			fi
 		
-			if [[ "$ARG" == "build" ]];  then
-				BUILD="true"
+			if [[ "$ARG" == "compile" ]];  then
+				COMPILE="true"
+				i=$((i+1))
+				SKIP_SHELLCHECK="${!i:-false}"
+			fi
+		
+			if [[ "$ARG" == "package" ]];  then
+				PACKAGE="true"
 				i=$((i+1))
 				SKIP_SHELLCHECK="${!i:-false}"
 			fi
@@ -224,12 +238,20 @@ run_sh_pm() {
 		clean_release "$ROOT_DIR_PATH"
 	fi
 	
+	if [[ "$LINT" == "true" ]];  then
+		run_shellcheck 
+	fi
+	
 	if [[ "$TEST" == "true" ]];  then
 		run_all_tests
 	fi
 	
-	if [[ "$BUILD" == "true" ]];  then
-		build_release
+	if [[ "$PACKAGE" == "true" ]];  then
+		run_release_package
+	fi
+	
+	if [[ "$COMPILE" == "true" ]];  then
+		compile_sh_project
 	fi
 	
 	if [[ "$INSTALL" == "true" ]];  then
@@ -292,9 +314,11 @@ clean_release() {
 
 	shpm_log_operation "Cleaning release"
 	
-	remove_tar_gz_from_folder "$PROJECT_DIR/$TARGET_DIR_SUBPATH"
-	
 	remove_tar_gz_from_folder "$RELEASES_DIR"
+	
+	remove_folder_if_exists "$TARGET_DIR_PATH"
+	
+	create_path_if_not_exists "$TARGET_DIR_PATH"
 }
 
 update_dependencies() {
@@ -542,12 +566,12 @@ update_dependency() {
 	cd "$ACTUAL_DIR" || exit 1
 }
 
-build_release() {
-
-	echo "===> $ROOT_DIR_PATH"
+run_release_package() {
 
     clean_release "$ROOT_DIR_PATH"
 
+	run_shellcheck 
+	
 	run_all_tests
 	
 	# Verify if are unit test failures
@@ -794,8 +818,6 @@ run_all_tests() {
 	local ACTUAL_DIR
 	ACTUAL_DIR=$(pwd)
 	
-	run_shellcheck
-
 	shpm_log_operation "Searching unit test files to run ..."
 
 
@@ -987,6 +1009,48 @@ do_coverage_analysis() {
 	echo "$PERCENT_COVERAGE" # this is a "return" value for this function	
 }
 
-run_sh_pm "$@"
+compile_sh_project() {
+	shpm_log_operation "Compile sh project"
+	shpm_log ":| Not implement yet :( But, COME SON ... :)"
+	
+	local FILE_WITH_CAT_SH_LIBS
+	local FILE_WITH_CAT_SH_SRCS
+	local FILE_WITH_SEPARATOR
+	
+	FILE_WITH_CAT_SH_LIBS="$TMP_DIR_PATH/lib_files_concat"
+	FILE_WITH_CAT_SH_SRCS="$TMP_DIR_PATH/sh_files_concat"
+	COMPILED_FILE="$TARGET_DIR_PATH/compiled.sh"
+	FILE_WITH_SEPARATOR="$TMP_DIR_PATH/separator"
+	FILE_WITH_ALL_INCLUDES="$TMP_DIR_PATH/includes"
+	
+	find "$LIB_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_LIBS""_tmp"
+	
+	# TODO: bug in egrep ^include_.+i when compile shpm itself
+	cat "$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -v "source ../../../bootstrap.sh" | egrep -v "^#!" | egrep -v "^include_.+i" > "$FILE_WITH_CAT_SH_LIBS" #NOT
+	remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS""_tmp"
+	
+	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_SRCS""_tmp"
+	
+	# TODO: bug in egrep ^include_.+i when compile shpm itself
+	cat "$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -v "source ../../../bootstrap.sh" | egrep -v "^#!" | egrep -v "^include_.+i" > "$FILE_WITH_CAT_SH_SRCS"
+	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS""_tmp"
 
-grep -E '^[[:space:]]*([[:alnum:]_]+[[:space:]]*\(\)|function[[:space:]]+[[:alnum:]_]+)' $filepath | tr \(\)\}\{ ' ' | sed 's/^[ \t]*//;s/[ \t]*$//'
+	remove_file_if_exists "$COMPILED_FILE"
+	
+	echo "# ================================================================================================" > "$FILE_WITH_SEPARATOR"
+	
+	cat \
+	"$FILE_WITH_SEPARATOR" "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" \
+	"$FILE_WITH_SEPARATOR" "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"  \
+	"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_SRCS" \
+	"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_LIBS" > "$COMPILED_FILE"
+	
+	sed -i '/^$/d' "$COMPILED_FILE"
+	
+	remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS"
+	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS"
+	
+	chmod 755 "$COMPILED_FILE"
+}
+
+run_sh_pm "$@"
