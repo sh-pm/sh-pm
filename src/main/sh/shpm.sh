@@ -45,8 +45,14 @@ remove_folder_if_exists() {
 	if [[ -d "$PATH_TO_FOLDER" ]]; then
 		shpm_log "Removing folder $PATH_TO_FOLDER ..."
 	
-		# SECURE rm -rf: move content to TMP_DIR, and execute rm -rf only inside TMP_DIR
-		mv "$PATH_TO_FOLDER" "$TMP_DIR_PATH"
+		##
+		 # SECURE rm -rf: move content to TMP_DIR, and execute rm -rf only inside TMP_DIR
+		 ##
+		# If a folder not already in tmp dir 
+		echo ""
+		if [[ "$TMP_DIR_PATH/"$( basename "$PATH_TO_FOLDER") != "$PATH_TO_FOLDER" ]]; then
+			mv "$PATH_TO_FOLDER" "$TMP_DIR_PATH"
+		fi
 		
 		cd "$TMP_DIR_PATH" || exit
 		
@@ -101,6 +107,8 @@ shpm_log() {
 			echo -e "${ECHO_COLOR_RED}$MSG${ECHO_COLOR_NC}"			
 		elif [[ "$COLOR" == "green" ]]; then
 			echo -e "${ECHO_COLOR_GREEN}$MSG${ECHO_COLOR_NC}"		
+		elif [[ "$COLOR" == "yellow" ]]; then
+			echo -e "${ECHO_COLOR_YELLOW}$MSG${ECHO_COLOR_NC}"	
 		else
 			echo -e "$MSG"
 		fi
@@ -311,14 +319,15 @@ clean_release() {
 	PROJECT_DIR="$1"
 	
 	RELEASES_DIR="$PROJECT_DIR/releases"
+	TARGET_DIR="$PROJECT_DIR/$TARGET_DIR_SUBPATH"
 
 	shpm_log_operation "Cleaning release"
 	
 	remove_tar_gz_from_folder "$RELEASES_DIR"
+		
+	remove_folder_if_exists "$TARGET_DIR"
 	
-	remove_folder_if_exists "$TARGET_DIR_PATH"
-	
-	create_path_if_not_exists "$TARGET_DIR_PATH"
+	create_path_if_not_exists "$TARGET_DIR"
 }
 
 update_dependencies() {
@@ -789,10 +798,11 @@ run_shellcheck() {
 	    for FILE_TO_CHECK in $SRC_DIR_PATH/*.sh; do        
 	    
 	    	if "$SHELLCHECK_CMD" -x -e SC1090 -e SC1091 "$FILE_TO_CHECK" > "$TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME"; then	    	
-	    		shpm_log "$FILE_TO_CHECK passed in shellcheck"
+	    		shpm_log "$FILE_TO_CHECK passed in shellcheck" "green"
 	    	else
-	    		shpm_log "$FILE_TO_CHECK have shellcheck errors."
-	    		shpm_log "See log in $TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME"
+	    		shpm_log "FAIL!" "re"
+	    		shpm_log "$FILE_TO_CHECK have shellcheck errors." "red"
+	    		shpm_log "See log in $TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME" "red"
 	    		
 	    		sed -i '1s/^/=== ERRORS FOUND BY ShellCheck tool: === /' "$TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME"
 	    		
@@ -805,7 +815,7 @@ run_shellcheck() {
 	    	fi
     	done;
     else
-    	shpm_log "WARNING: ShellCheck not found: skipping ShellCheck verification !!!"
+    	shpm_log "WARNING: ShellCheck not found: skipping ShellCheck verification !!!" "yellow"
     fi
     
     shpm_log ""
@@ -952,31 +962,33 @@ do_coverage_analysis() {
 	shpm_log "Run test coverage analysis in $SRC_DIR_PATH:"
 	shpm_log ""
 	
-	for filepath in $(find "$SRC_DIR_PATH" -name "*.sh"); do 
+	SH_FILES_FOUNDED=$( find "$SRC_DIR_PATH" -name "*.sh" )
+	
+	for filepath in "${SH_FILES_FOUNDED[@]}"; do 
 		FILE_COUNT=$((FILE_COUNT+1))
 		 
 		shpm_log ""
 		shpm_log "-- $filepath ---------------------- "
 		
-		FUNCTIONS_TO_TEST=( `grep -E '^[[:space:]]*([[:alnum:]_]+[[:space:]]*\(\)|function[[:space:]]+[[:alnum:]_]+)' $filepath | tr \(\)\}\{ ' ' | sed 's/^[ \t]*//;s/[ \t]*$//'` );
+		FUNCTIONS_TO_TEST=( $(grep -E '^[[:space:]]*([[:alnum:]_]+[[:space:]]*\(\)|function[[:space:]]+[[:alnum:]_]+)' "$filepath" | tr \(\)\}\{ ' ' | sed 's/^[ \t]*//;s/[ \t]*$//') );
 		  
 		filename="$( basename "$filepath" )"
 		test_filename="${filename//.sh/}_test.sh"
 		test_filepath="$TEST_DIR_PATH/$test_filename"
 		 
 		if [[ -f "$test_filepath" ]]; then
-			EXISTING_TEST_FUNCTIONS=( `grep -E '^[[:space:]]*([[:alnum:]_]+[[:space:]]*\(\)|function[[:space:]]+[[:alnum:]_]+)' $test_filepath | tr \(\)\}\{ ' ' | sed 's/^[ \t]*//;s/[ \t]*$//'` );
+			EXISTING_TEST_FUNCTIONS=( $(grep -E '^[[:space:]]*([[:alnum:]_]+[[:space:]]*\(\)|function[[:space:]]+[[:alnum:]_]+)' "$test_filepath" | tr \(\)\}\{ ' ' | sed 's/^[ \t]*//;s/[ \t]*$//') );
 		fi
 		
 		FILE_FUNCTIONS_COUNT=0
 		FILE_FUNCTIONS_WITH_TEST_COUNT=0
-		for function in ${FUNCTIONS_TO_TEST[@]}; do
+		for function_name in "${FUNCTIONS_TO_TEST[@]}"; do
 			FILE_FUNCTIONS_COUNT=$((FILE_FUNCTIONS_COUNT+1))
 			FUNCTIONS_COUNT=$((FUNCTIONS_COUNT+1))
 			
 			foundtest=$FALSE
-			for test_function in ${EXISTING_TEST_FUNCTIONS[@]}; do
-				if [[ "$test_function" == "test_""$function" ]]; then
+			for test_function in "${EXISTING_TEST_FUNCTIONS[@]}"; do
+				if [[ "$test_function" == "test_""$function_name" ]]; then
 					foundtest=$TRUE
 					FILE_FUNCTIONS_WITH_TEST_COUNT=$((FILE_FUNCTIONS_WITH_TEST_COUNT+1))
 					FUNCTIONS_WITH_TEST_COUNT=$((FUNCTIONS_WITH_TEST_COUNT+1))
@@ -985,9 +997,9 @@ do_coverage_analysis() {
 			done;
 			
 			if [[ "$foundtest" == "$FALSE" ]]; then
-			   shpm_log "     $function ... No tests found!" "red"
+			   shpm_log "     $function_name ... No tests found!" "red"
 			else
-			   shpm_log "     $function ... OK" "green"
+			   shpm_log "     $function_name ... OK" "green"
 			fi
 		done
 		
@@ -1014,12 +1026,17 @@ compile_sh_project() {
 	local FILE_WITH_CAT_SH_LIBS
 	local FILE_WITH_CAT_SH_SRCS
 	local FILE_WITH_SEPARATOR
+	local COMPILED_FILE
+	
+	local REGEX_INCLUDE_LIB_AND_FILE
+	local REGEX_SHEBANG
+	local PATTERN_INCLUDE_BOOTSTRAP_FILE
 	
 	FILE_WITH_CAT_SH_LIBS="$TMP_DIR_PATH/lib_files_concat"
 	FILE_WITH_CAT_SH_SRCS="$TMP_DIR_PATH/sh_files_concat"
-	COMPILED_FILE="$TARGET_DIR_PATH/compiled.sh"
 	FILE_WITH_SEPARATOR="$TMP_DIR_PATH/separator"
-	FILE_WITH_ALL_INCLUDES="$TMP_DIR_PATH/includes"
+	
+	COMPILED_FILE="$TARGET_DIR_PATH/compiled.sh"
 	
 	REGEX_INCLUDE_LIB_AND_FILE="^include_.+i"
 	REGEX_SHEBANG="^#\!"
@@ -1027,12 +1044,12 @@ compile_sh_project() {
 	
 	find "$LIB_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_LIBS""_tmp"
 	
-	cat "$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" | egrep -v "$REGEX_SHEBANG" | egrep -v "$REGEX_INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_LIBS"
+	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" <"$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -E -v "$REGEX_SHEBANG" | grep -E -v "$REGEX_INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_LIBS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS""_tmp"
 	
 	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_SRCS""_tmp"
 	
-	cat "$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" | egrep -v "$REGEX_SHEBANG" | egrep -v "$REGEX_INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_SRCS"
+	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" <"$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -E -v "$REGEX_SHEBANG" | grep -E -v "$REGEX_INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_SRCS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS""_tmp"
 
 	remove_file_if_exists "$COMPILED_FILE"

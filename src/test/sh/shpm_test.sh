@@ -13,17 +13,35 @@ include_file "$LIB_DIR_PATH/sh-unit-v1.5.5/asserts.sh"
 # SetUp
 # ======================================
 ACTUAL_ROOT_DIR_PATH="$ROOT_DIR_PATH"
-
+ACTUAL_LIB_DIR_PATH="$LIB_DIR_PATH"
+ACTUAL_SRC_DIR_PATH="$SRC_DIR_PATH"
+ACTUAL_TARGET_DIR_PATH="$TARGET_DIR_PATH"
 
 
 # ======================================
 # Teardown
 # ======================================
-trap "remove_file_and_folders_4tests" EXIT
+trap "clean_and_restore_env" EXIT
+
+
+clean_and_restore_env() {
+	remove_file_and_folders_4tests 
+	restore_initial_env_before_tests 
+}
+
+restore_initial_env_before_tests() {
+	ROOT_DIR_PATH="$ACTUAL_ROOT_DIR_PATH"
+	LIB_DIR_PATH="$ACTUAL_LIB_DIR_PATH"
+	SRC_DIR_PATH="$ACTUAL_SRC_DIR_PATH"
+	TARGET_DIR_PATH="$ACTUAL_TARGET_DIR_PATH"
+	
+	source "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME"
+}
+
 remove_file_and_folders_4tests() {
 	local ACTUAL_DIR
 	ACTUAL_DIR=$(pwd)
-
+	
 	cd "$TMP_DIR_PATH" || exit 1
 
 	echo "Removing $FOLDERNAME_4TEST"	
@@ -36,10 +54,8 @@ remove_file_and_folders_4tests() {
 	rm -rf "$PROJECTNAME_4TEST"
 	
 	cd "$ACTUAL_DIR" || exit 1
-	ROOT_DIR_PATH="$ACTUAL_ROOT_DIR_PATH"
-	
-	source "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME"
 }
+
 
 # ======================================
 # Tests
@@ -99,7 +115,7 @@ test_remove_folder_if_exists() {
 	 
 	PATH_TARGET="$TMP_DIR_PATH/$FOLDERNAME_4TEST/subfolder1/subfolder1_1"
 	if [[ -d "$PATH_TARGET" ]]; then
-		assert_fail "fail expected not existing path but path alread exists"
+		assert_fail "fail expected not existing path but path already exists"
 	fi 
 	remove_folder_if_exists "$PATH_TARGET"	
 	assert_false "$?" || assert_fail "try remove not existing path"	
@@ -173,7 +189,11 @@ test_remove_file_if_exists() {
 
 test_shpm_log() {
 	local STRING="teste 123 teste"
+	
+	SHPM_LOG_DISABLED="$FALSE"
 	local STRING_LOGGED=$( shpm_log "$STRING" )
+	SHPM_LOG_DISABLED="$TRUE"
+	
 	assert_equals "$STRING" "$STRING_LOGGED"
 }
 
@@ -182,7 +202,11 @@ test_shpm_log_operation() {
 EXPECTED='================================================================
 sh-pm: teste 123 teste
 ================================================================'
+
+	SHPM_LOG_DISABLED="$FALSE"
 	local STRING_LOGGED=$( shpm_log_operation "teste 123 teste" )
+	SHPM_LOG_DISABLED="$TRUE"
+	
 	assert_equals "$EXPECTED" "$STRING_LOGGED"
 }
 
@@ -210,10 +234,178 @@ test_clean_release() {
 	RESULT=$( find "$PROJECT_RELEASES_DIR" -name *.tar.gz )
 	assert_true "$RESULT" "" || assert_fail "before clean found files *.tar.gz in $PROJECT_RELEASES_DIR"
 	
+	
 	RESULT=$( find "$PROJECT_TARGET_DIR" -name *.tar.gz )
 	assert_true "$RESULT" "" || assert_fail "before clean found files *.tar.gz in $PROJECT_TARGET_DIR"
-	
+
 	remove_folder_if_exists "$PROJECT_DIR"
+}
+
+test_update_dependency() {
+
+	local DEP_NAME
+	local DEP_VERSION
+	
+	remove_folder_if_exists "$TMP_DIR_PATH/sh-project-only-4tests"
+	
+	download_from_git_to_tmp_folder "github.com/sh-pm" "sh-project-only-4tests" "v0.1.0"
+	
+	# -- DO Override shpm bootstrap load with sh-project-only-4tests bootstrap load -- 
+	ROOT_DIR_PATH="$TMP_DIR_PATH/sh-project-only-4tests"
+	LIB_DIR_PATH="$ROOT_DIR_PATH/$LIB_DIR_SUBPATH"
+	SRC_DIR_PATH="$ROOT_DIR_PATH/$SRC_DIR_SUBPATH"
+	TARGET_DIR_PATH="$ROOT_DIR_PATH/$TARGET_DIR_SUBPATH"	
+	# -- -----------------------------------------------------------------------------
+	
+	DEP_NAME="sh-unit"
+	DEP_VERSION="v1.5.5"
+	DEP_OLD_VERSION="v1.5.3"
+	
+	FILENAME1_INSIDE_DEP="asserts.sh"
+	FILENAME2_INSIDE_DEP="test_runner.sh"
+	
+	remove_folder_if_exists "$LIB_DIR_PATH" 
+	
+	update_dependency "sh-unit"
+	
+	if [[ ! -d "$LIB_DIR_PATH/$DEP_NAME-$DEP_VERSION" ]]; then
+		assert_fail "Fail on download $DEP_NAME dependency"
+	else
+		assert_success
+	fi
+	
+	mv "$LIB_DIR_PATH/$DEP_NAME-$DEP_VERSION" "$LIB_DIR_PATH/$DEP_NAME-$DEP_OLD_VERSION"
+	if [[ ! -d "$LIB_DIR_PATH/$DEP_NAME-$DEP_OLD_VERSION" ]]; then
+		assert_fail "Fail on rename sh-unit local dependency folder from $DEP_NAME-$DEP_VERSION to $DEP_NAME-$DEP_OLD_VERSION"
+	else
+		assert_success
+	fi
+	
+	update_dependency "sh-unit"
+	
+	if [[ ! -d "$LIB_DIR_PATH/$DEP_NAME-$DEP_VERSION" ]]; then
+		assert_fail "Fail on update $DEP_NAME dependency $DEP_VERSION"
+	else 
+		assert_success
+	fi
+	
+	if [[ ! -f "$LIB_DIR_PATH/$DEP_NAME-$DEP_VERSION/$FILENAME1_INSIDE_DEP" ]]; then
+		assert_fail "Fail on update $DEP_NAME dependency $DEP_VERSION: $FILENAME1_INSIDE_DEP not found"
+	else
+		assert_success
+	fi
+	
+	if [[ ! -f "$LIB_DIR_PATH/$DEP_NAME-$DEP_VERSION/$FILENAME2_INSIDE_DEP" ]]; then
+		assert_fail "Fail on update $DEP_NAME dependency $DEP_VERSION: $FILENAME2_INSIDE_DEP not found"
+	else 
+		assert_success
+	fi
+	
+	remove_folder_if_exists "$ROOT_DIR_PATH"
+	if [[ -d "$ROOT_DIR_PATH" ]]; then
+		assert_fail "Fail on remove $ROOT_DIR_PATH"
+	else
+		assert_success
+	fi
+	
+	# -- UNDO Override shpm bootstrap load with sh-project-only-4tests bootstrap load --
+	ROOT_DIR_PATH="$ACTUAL_ROOT_DIR_PATH"
+	LIB_DIR_PATH="$ACTUAL_LIB_DIR_PATH"
+	SRC_DIR_PATH="$ACTUAL_SRC_DIR_PATH"
+	TARGET_DIR_PATH="$ACTUAL_TARGET_DIR_PATH"
+	#-----------------------------------------------------------------------------------
+}
+
+test_update_dependencies() {
+	remove_folder_if_exists "$TMP_DIR_PATH/sh-project-only-4tests"
+	
+	download_from_git_to_tmp_folder "github.com/sh-pm" "sh-project-only-4tests" "v0.1.0"
+	
+	# -- DO Override shpm bootstrap load with sh-project-only-4tests bootstrap load -- 
+	ROOT_DIR_PATH="$TMP_DIR_PATH/sh-project-only-4tests"
+	LIB_DIR_PATH="$ROOT_DIR_PATH/$LIB_DIR_SUBPATH"
+	SRC_DIR_PATH="$ROOT_DIR_PATH/$SRC_DIR_SUBPATH"
+	TARGET_DIR_PATH="$ROOT_DIR_PATH/$TARGET_DIR_SUBPATH"
+	source "$ROOT_DIR_PATH/pom.sh"	
+	# -- -----------------------------------------------------------------------------
+	
+	assert_equals "${#DEPENDENCIES[@]}" "4" || assert_fail "Problem override content of original pom.sh"
+	
+	update_dependencies
+	
+	if [[ ! -d "$LIB_DIR_PATH/sh-pm-v4.1.0" ]]; then
+		assert_fail "Fail on update $DEP_NAME dependency sh-pm-v4.1.0"
+	else 
+		assert_success
+	fi
+	
+	if [[ ! -d "$LIB_DIR_PATH/sh-logger-v1.4.0" ]]; then
+		assert_fail "Fail on update $DEP_NAME dependency sh-logger-v1.4.0"
+	else 
+		assert_success
+	fi
+	
+	if [[ ! -d "$LIB_DIR_PATH/sh-commons-v2.2.3" ]]; then
+		assert_fail "Fail on update $DEP_NAME dependency sh-commons-v2.2.3"
+	else 
+		assert_success
+	fi
+	
+	if [[ ! -d "$LIB_DIR_PATH/sh-unit-v1.5.5" ]]; then
+		assert_fail "Fail on update $DEP_NAME dependency sh-unit-v1.5.5"
+	else 
+		assert_success
+	fi
+	
+	# -- UNDO Override shpm bootstrap load with sh-project-only-4tests bootstrap load --
+	ROOT_DIR_PATH="$ACTUAL_ROOT_DIR_PATH"
+	LIB_DIR_PATH="$ACTUAL_LIB_DIR_PATH"
+	SRC_DIR_PATH="$ACTUAL_SRC_DIR_PATH"
+	TARGET_DIR_PATH="$ACTUAL_TARGET_DIR_PATH"
+	source "$ROOT_DIR_PATH/pom.sh"
+	#-----------------------------------------------------------------------------------
+	
+	assert_equals "${#DEPENDENCIES[@]}" "2" || assert_fail "Problem restore/reload content of original pom.sh to undo override changes"
+	
+	#for key in ${!DEPENDENCIES[@]}; do
+	#	echo "$key - ${DEPENDENCIES[$key]}"
+	#done 
+}
+
+test_git_clone() {
+	local REPOSITORY
+	local DEP_ARTIFACT_ID
+	local DEP_VERSION
+	
+	REPOSITORY="github.com/sh-pm"
+	DEP_ARTIFACT_ID="sh-project-only-4tests"
+	DEP_VERSION="v0.1.0"
+
+	local ACTUAL_DIR
+	ACTUAL_DIR=$(pwd)
+	
+	cd "$TMP_DIR_PATH"
+	
+	remove_folder_if_exists "$TMP_DIR_PATH/$DEP_ARTIFACT_ID"
+	if [[ -d "$TMP_DIR_PATH/$DEP_ARTIFACT_ID" ]]; then
+		assert_fail "$TMP_DIR_PATH/$DEP_ARTIFACT_ID already exists"
+	fi 
+
+	git_clone "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION"
+	assert_equals "$?" "$TRUE"
+	
+	if [[ ! -d "$TMP_DIR_PATH/$DEP_ARTIFACT_ID" ]]; then
+		assert_fail "fail git clone $DEP_ARTIFACT_ID to $TMP_DIR_PATH"
+	else
+		assert_success
+	fi 
+	
+	remove_folder_if_exists "$TMP_DIR_PATH/$DEP_ARTIFACT_ID"
+	if [[ -d "$TMP_DIR_PATH/$DEP_ARTIFACT_ID" ]]; then
+		assert_fail "fail remove $TMP_DIR_PATH/$DEP_ARTIFACT_ID"
+	fi 
+	
+	cd "$ACTUAL_DIR"
 }
 
 run_all_tests_in_this_script
