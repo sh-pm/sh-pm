@@ -1134,7 +1134,8 @@ compile_sh_project() {
 	local FILE_WITH_CAT_SH_LIBS
 	local FILE_WITH_CAT_SH_SRCS
 	local FILE_WITH_SEPARATOR
-	local COMPILED_FILE
+	local COMPILED_FILE_NAME
+	local COMPILED_FILE_PATH
 	
 	local REGEX_INCLUDE_LIB_AND_FILE
 	local REGEX_SHEBANG
@@ -1144,11 +1145,15 @@ compile_sh_project() {
 	FILE_WITH_CAT_SH_SRCS="$TMP_DIR_PATH/sh_files_concat"
 	FILE_WITH_SEPARATOR="$TMP_DIR_PATH/separator"
 	
-	COMPILED_FILE="$TARGET_DIR_PATH/compiled.sh"
+   create_path_if_not_exists "$TARGET_DIR_PATH"
+   
+   COMPILED_FILE_NAME="$( basename "$ROOT_DIR_PATH" )"".sh"
+	
+	COMPILED_FILE_PATH="$TARGET_DIR_PATH/$COMPILED_FILE_NAME"
 	
 	REGEX_INCLUDE_LIB_AND_FILE="^include_.+i"
 	REGEX_SHEBANG="^#\!"
-	PATTERN_INCLUDE_BOOTSTRAP_FILE="source ../../../bootstrap.sh"
+	PATTERN_INCLUDE_BOOTSTRAP_FILE="source ./bootstrap.sh"
 	
 	find "$LIB_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_LIBS""_tmp"
 	
@@ -1160,23 +1165,23 @@ compile_sh_project() {
 	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" <"$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -E -v "$REGEX_SHEBANG" | grep -E -v "$REGEX_INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_SRCS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS""_tmp"
 
-	remove_file_if_exists "$COMPILED_FILE"
+	remove_file_if_exists "$COMPILED_FILE_PATH"
 	
-	printf "\n# ================================================================================================\n" > "$FILE_WITH_SEPARATOR"
+	printf "\n# ================================================================================================\n" > "$FILE_WITH_SEPARATOR"	
 	
 	cat \
 	"$FILE_WITH_SEPARATOR" "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" \
 	"$FILE_WITH_SEPARATOR" "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"  \
 	"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_LIBS" \
 	"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_SRCS" \
-		> "$COMPILED_FILE"
+		> "$COMPILED_FILE_PATH"
 	
-	sed -i '/^$/d' "$COMPILED_FILE"
+	sed -i '/^$/d' "$COMPILED_FILE_PATH"
 	
 	remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS"
 	
-	chmod 755 "$COMPILED_FILE"
+	chmod 755 "$COMPILED_FILE_PATH"
 }
 
 run_sh_pm "$@"
