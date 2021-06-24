@@ -44,13 +44,13 @@ remove_file_and_folders_4tests() {
 	
 	cd "$TMP_DIR_PATH" || exit 1
 
-	echo "Removing $FOLDERNAME_4TEST"	
+	echo "   Removing $FOLDERNAME_4TEST"	
 	rm -rf "$FOLDERNAME_4TEST"
 	
-	echo "Removing $FILENAME_4TEST"
+	echo "   Removing $FILENAME_4TEST"
 	rm -f "$FILENAME_4TEST"
 	
-	echo "Removing $PROJECTNAME_4TEST"
+	echo "   Removing $PROJECTNAME_4TEST"
 	rm -rf "$PROJECTNAME_4TEST"
 	
 	cd "$ACTUAL_DIR" || exit 1
@@ -406,6 +406,34 @@ test_git_clone() {
 	fi 
 	
 	cd "$ACTUAL_DIR"
+}
+
+test_increase_g_indent() {
+	G_SHPMLOG_INDENT=""
+	
+	increase_g_indent
+	assert_equals "$G_SHPMLOG_INDENT" "  "
+	
+	increase_g_indent
+	assert_equals "$G_SHPMLOG_INDENT" "    "
+	
+	increase_g_indent
+	assert_equals "$G_SHPMLOG_INDENT" "      "
+	
+	reset_g_indent
+}
+
+test_decrease_g_indent() {
+	G_SHPMLOG_INDENT="      "
+	
+	decrease_g_indent
+	assert_equals "$G_SHPMLOG_INDENT" "    "
+	
+	decrease_g_indent
+	assert_equals "$G_SHPMLOG_INDENT" "  "
+	
+	decrease_g_indent
+	assert_equals "$G_SHPMLOG_INDENT" ""
 }
 
 run_all_tests_in_this_script

@@ -4,6 +4,9 @@ source ../../../bootstrap.sh
 
 SHPM_LOG_DISABLED="$FALSE"
 
+G_SHPMLOG_TAB="  "
+G_SHPMLOG_INDENT=""
+
 #-----------------------------------
 evict_catastrophic_remove() {
 	# Evict catastrophic rm's when ROOT_DIR_PATH not set 
@@ -25,7 +28,7 @@ create_path_if_not_exists() {
 	fi 
 
 	if [[ ! -d "$PATH_TARGET" ]]; then
-	   shpm_log "Creating $PATH_TARGET ..."
+	   shpm_log "- Creating $PATH_TARGET ..."
 	   mkdir -p "$PATH_TARGET"
 	fi
 }
@@ -43,13 +46,12 @@ remove_folder_if_exists() {
 	fi 
 	
 	if [[ -d "$PATH_TO_FOLDER" ]]; then
-		shpm_log "Removing folder $PATH_TO_FOLDER ..."
+		shpm_log "- Exec secure remove of folder $PATH_TO_FOLDER ..."
 	
 		##
 		 # SECURE rm -rf: move content to TMP_DIR, and execute rm -rf only inside TMP_DIR
 		 ##
 		# If a folder not already in tmp dir 
-		echo ""
 		if [[ "$TMP_DIR_PATH/"$( basename "$PATH_TO_FOLDER") != "$PATH_TO_FOLDER" ]]; then
 			mv "$PATH_TO_FOLDER" "$TMP_DIR_PATH"
 		fi
@@ -79,7 +81,7 @@ remove_file_if_exists() {
 	fi 
 	
 	if [[ -f "$PATH_TO_FILE" ]]; then
-		shpm_log "Removing file $PATH_TO_FILE ..."
+		shpm_log "- Exec secure remove of file $PATH_TO_FILE ..."
 	
 		# SECURE rm -rf: move content to TMP_DIR, and execute rm -rf only inside TMP_DIR
 		if [[ "$PATH_TO_FILE" != "$TMP_DIR_PATH"/$(basename "$PATH_TO_FILE") ]]; then
@@ -98,19 +100,37 @@ remove_file_if_exists() {
 	fi
 }
 
+increase_g_indent() {
+	G_SHPMLOG_INDENT="$G_SHPMLOG_INDENT""$G_SHPMLOG_TAB"
+}
+
+decrease_g_indent() {
+	local END_POS
+	END_POS=$( echo "${#G_SHPMLOG_INDENT} - ${#G_SHPMLOG_TAB}" | bc )
+	G_SHPMLOG_INDENT="${G_SHPMLOG_INDENT:0:$END_POS}"
+}
+
+reset_g_indent() {
+	G_SHPMLOG_INDENT=""
+}
+
+set_g_indent() {
+	G_SHPMLOG_INDENT="$1"
+}
+
 shpm_log() {
 	local MSG=$1
 	local COLOR=$2
 	
     if [[ "$SHPM_LOG_DISABLED" != "$TRUE" ]]; then
 		if [[ "$COLOR" == "red" ]]; then
-			echo -e "${ECHO_COLOR_RED}$MSG${ECHO_COLOR_NC}"			
+			echo -e "${G_SHPMLOG_INDENT}${ECHO_COLOR_RED}$MSG${ECHO_COLOR_NC}"			
 		elif [[ "$COLOR" == "green" ]]; then
-			echo -e "${ECHO_COLOR_GREEN}$MSG${ECHO_COLOR_NC}"		
+			echo -e "${G_SHPMLOG_INDENT}${ECHO_COLOR_GREEN}$MSG${ECHO_COLOR_NC}"		
 		elif [[ "$COLOR" == "yellow" ]]; then
-			echo -e "${ECHO_COLOR_YELLOW}$MSG${ECHO_COLOR_NC}"	
+			echo -e "${G_SHPMLOG_INDENT}${ECHO_COLOR_YELLOW}$MSG${ECHO_COLOR_NC}"	
 		else
-			echo -e "$MSG"
+			echo -e "${G_SHPMLOG_INDENT}$MSG"
 		fi
 	fi
 }
@@ -418,7 +438,7 @@ git_clone() {
 	
 	GIT_CMD="$(which git)"
 
-	if "$GIT_CMD" clone --branch "$DEP_VERSION" "https://""$REPOSITORY""/""$DEP_ARTIFACT_ID"".git" &>/dev/null ; then
+	if "$GIT_CMD" clone --branch "$DEP_VERSION" "https://""$REPOSITORY""/""$DEP_ARTIFACT_ID"".git"; then
 		return $TRUE
 	fi
 	return $FALSE
@@ -438,9 +458,10 @@ download_from_git_to_tmp_folder() {
 	
 	cd "$TMP_DIR_PATH" || exit
 	
-	shpm_log "     - Cloning from https://$REPOSITORY/$DEP_ARTIFACT_ID into /tmp/$DEP_ARTIFACT_ID ..."
-	shpm_log "        $GIT_CMD clone --branch $DEP_VERSION https://$REPOSITORY/$DEP_ARTIFACT_ID.git"
-	
+	GIT_CMD="$(which git)"
+
+	shpm_log "- Cloning from https://$REPOSITORY/$DEP_ARTIFACT_ID into /tmp/$DEP_ARTIFACT_ID ..."
+	shpm_log "    $GIT_CMD clone --branch $DEP_VERSION https://$REPOSITORY/$DEP_ARTIFACT_ID.git"
 	if git_clone "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION" &>/dev/null ; then
 		return $TRUE
 	fi
@@ -449,7 +470,7 @@ download_from_git_to_tmp_folder() {
 }
 
 shpm_update_itself_after_git_clone() {
-    shpm_log "     WARN: sh-pm updating itself ..."
+    shpm_log "WARN: sh-pm updating itself ..." "yellow"
     
     local PATH_TO_DEP_IN_TMP
     local PATH_TO_DEP_IN_PROJECT
@@ -545,14 +566,17 @@ update_dependency() {
 	PATH_TO_DEP_IN_TMP="$TMP_DIR_PATH/$DEP_ARTIFACT_ID"
 	
 	shpm_log "----------------------------------------------------"
-	shpm_log "  Updating $DEP_ARTIFACT_ID to $DEP_VERSION: Start"				
+	reset_g_indent 
+	increase_g_indent 	
+	shpm_log "Updating $DEP_ARTIFACT_ID to $DEP_VERSION: Start"				
 	 
-	if download_from_git_to_tmp_folder "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION" &>/dev/null ; then
+	increase_g_indent
+	if download_from_git_to_tmp_folder "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION"; then
 	
 		remove_folder_if_exists "$PATH_TO_DEP_IN_PROJECT"		
 		create_path_if_not_exists "$PATH_TO_DEP_IN_PROJECT"
-					
-		shpm_log "   - Copy artifacts from $PATH_TO_DEP_IN_TMP to $PATH_TO_DEP_IN_PROJECT ..."
+				
+		shpm_log "- Copy artifacts from $PATH_TO_DEP_IN_TMP to $PATH_TO_DEP_IN_PROJECT ..."
 		cp "$PATH_TO_DEP_IN_TMP/src/main/sh/"* "$PATH_TO_DEP_IN_PROJECT"
 		cp "$PATH_TO_DEP_IN_TMP/pom.sh" "$PATH_TO_DEP_IN_PROJECT"
 		
@@ -561,18 +585,25 @@ update_dependency() {
 			shpm_update_itself_after_git_clone "$PATH_TO_DEP_IN_TMP" "$PATH_TO_DEP_IN_PROJECT"
 		fi
 		
-		shpm_log "   - Removing $PATH_TO_DEP_IN_TMP ..."
+		shpm_log "- Removing $PATH_TO_DEP_IN_TMP ..."
+		increase_g_indent
 		remove_folder_if_exists "$PATH_TO_DEP_IN_TMP"
+		decrease_g_indent
 		
 		cd "$ACTUAL_DIR" || exit
 	
 	else 		   		  
-       shpm_log "  $DEP_ARTIFACT_ID was not updated to $DEP_VERSION!"
+       shpm_log "$DEP_ARTIFACT_ID was not updated to $DEP_VERSION!"
 	fi
 	
-	shpm_log "  Update $DEP_ARTIFACT_ID to $DEP_VERSION: Finish"
+	decrease_g_indent 	
+	shpm_log "Update $DEP_ARTIFACT_ID to $DEP_VERSION: Finish"
+	
+	reset_g_indent 
 	
 	cd "$ACTUAL_DIR" || exit 1
+	
+	
 }
 
 run_release_package() {
