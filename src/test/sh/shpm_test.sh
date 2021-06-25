@@ -569,7 +569,7 @@ test_set_dependency_version() {
 }
 
 test_compile_sh_project() {
-
+	assert_fail "fkjlsa"
 }
 
 run_all_tests_in_this_script
