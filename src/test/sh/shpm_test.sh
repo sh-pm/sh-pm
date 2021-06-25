@@ -436,4 +436,140 @@ test_decrease_g_indent() {
 	assert_equals "$G_SHPMLOG_INDENT" ""
 }
 
+test_reset_g_indent() {
+	local INDENTATION
+	INDENTATION="      "
+	
+	G_SHPMLOG_INDENT="$INDENTATION"
+	
+	assert_equals "$G_SHPMLOG_INDENT" "$INDENTATION"
+	
+	reset_g_indent 
+	assert_equals "$G_SHPMLOG_INDENT" ""
+	
+	reset_g_indent
+}
+
+test_set_g_indent() {
+	local INDENTATION
+	INDENTATION="      "
+
+	assert_equals "$G_SHPMLOG_INDENT" ""
+	
+	INDENTATION="      "
+	set_g_indent "$INDENTATION"
+	assert_equals "$G_SHPMLOG_INDENT" "$INDENTATION"
+	
+	reset_g_indent
+	assert_equals "$G_SHPMLOG_INDENT" "" 
+}
+
+test_download_from_git_to_tmp_folder() {
+	local REPOSITORY
+	local DEP_ARTIFACT_ID
+	local DEP_VERSION
+	
+	REPOSITORY="github.com/sh-pm"
+	DEP_ARTIFACT_ID="sh-project-only-4tests"
+	DEP_VERSION="v0.1.0"
+
+	local ACTUAL_DIR
+	ACTUAL_DIR=$(pwd)
+	
+	cd "$TMP_DIR_PATH"
+	
+	remove_folder_if_exists "$TMP_DIR_PATH/$DEP_ARTIFACT_ID"
+	if [[ -d "$TMP_DIR_PATH/$DEP_ARTIFACT_ID" ]]; then
+		assert_fail "$TMP_DIR_PATH/$DEP_ARTIFACT_ID already exists"
+	fi 
+
+	download_from_git_to_tmp_folder "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION"
+	assert_equals "$?" "$TRUE"
+	
+	if [[ ! -d "$TMP_DIR_PATH/$DEP_ARTIFACT_ID" ]]; then
+		assert_fail "fail download from $DEP_ARTIFACT_ID from git to $TMP_DIR_PATH"
+	else
+		assert_success
+	fi 
+	
+	remove_folder_if_exists "$TMP_DIR_PATH/$DEP_ARTIFACT_ID"
+	if [[ -d "$TMP_DIR_PATH/$DEP_ARTIFACT_ID" ]]; then
+		assert_fail "fail remove $TMP_DIR_PATH/$DEP_ARTIFACT_ID"
+	fi 
+	
+	cd "$ACTUAL_DIR"
+}
+
+test_set_dependency_repository() {
+	remove_folder_if_exists "$TMP_DIR_PATH/sh-project-only-4tests"
+	
+	download_from_git_to_tmp_folder "github.com/sh-pm" "sh-project-only-4tests" "v0.1.0"
+	
+	# -- DO Override shpm bootstrap load with sh-project-only-4tests bootstrap load -- 
+	ROOT_DIR_PATH="$TMP_DIR_PATH/sh-project-only-4tests"
+	LIB_DIR_PATH="$ROOT_DIR_PATH/$LIB_DIR_SUBPATH"
+	SRC_DIR_PATH="$ROOT_DIR_PATH/$SRC_DIR_SUBPATH"
+	TARGET_DIR_PATH="$ROOT_DIR_PATH/$TARGET_DIR_SUBPATH"
+	source "$ROOT_DIR_PATH/pom.sh"	
+	# -- -----------------------------------------------------------------------------
+	
+	assert_equals "${#DEPENDENCIES[@]}" "4" || assert_fail "Problem override content of original pom.sh"	
+
+	local SHPM_REPOSITORY
+	
+	assert_equals "" "$SHPM_REPOSITORY"
+	
+	set_dependency_repository "sh-pm" SHPM_REPOSITORY
+	
+	assert_equals "github.com/sh-pm" "$SHPM_REPOSITORY"
+	
+	# -- UNDO Override shpm bootstrap load with sh-project-only-4tests bootstrap load --
+	ROOT_DIR_PATH="$ACTUAL_ROOT_DIR_PATH"
+	LIB_DIR_PATH="$ACTUAL_LIB_DIR_PATH"
+	SRC_DIR_PATH="$ACTUAL_SRC_DIR_PATH"
+	TARGET_DIR_PATH="$ACTUAL_TARGET_DIR_PATH"
+	source "$ROOT_DIR_PATH/pom.sh"
+	#-----------------------------------------------------------------------------------
+	
+	assert_equals "${#DEPENDENCIES[@]}" "2" || assert_fail "Problem restore/reload content of original pom.sh to undo override changes"
+}
+
+test_set_dependency_version() {
+	remove_folder_if_exists "$TMP_DIR_PATH/sh-project-only-4tests"
+	
+	download_from_git_to_tmp_folder "github.com/sh-pm" "sh-project-only-4tests" "v0.1.0"
+	
+	# -- DO Override shpm bootstrap load with sh-project-only-4tests bootstrap load -- 
+	ROOT_DIR_PATH="$TMP_DIR_PATH/sh-project-only-4tests"
+	LIB_DIR_PATH="$ROOT_DIR_PATH/$LIB_DIR_SUBPATH"
+	SRC_DIR_PATH="$ROOT_DIR_PATH/$SRC_DIR_SUBPATH"
+	TARGET_DIR_PATH="$ROOT_DIR_PATH/$TARGET_DIR_SUBPATH"
+	source "$ROOT_DIR_PATH/pom.sh"	
+	# -- -----------------------------------------------------------------------------
+	
+	assert_equals "${#DEPENDENCIES[@]}" "4" || assert_fail "Problem override content of original pom.sh"	
+
+	local SHPM_DEP_VERSION
+	
+	assert_equals "" "$SHPM_DEP_VERSION"
+	
+	set_dependency_version "sh-pm" SHPM_DEP_VERSION
+	
+	assert_equals "v4.1.0" "$SHPM_DEP_VERSION"
+	
+	# -- UNDO Override shpm bootstrap load with sh-project-only-4tests bootstrap load --
+	ROOT_DIR_PATH="$ACTUAL_ROOT_DIR_PATH"
+	LIB_DIR_PATH="$ACTUAL_LIB_DIR_PATH"
+	SRC_DIR_PATH="$ACTUAL_SRC_DIR_PATH"
+	TARGET_DIR_PATH="$ACTUAL_TARGET_DIR_PATH"
+	source "$ROOT_DIR_PATH/pom.sh"
+	#-----------------------------------------------------------------------------------
+	
+	assert_equals "${#DEPENDENCIES[@]}" "2" || assert_fail "Problem restore/reload content of original pom.sh to undo override changes"
+}
+
+test_compile_sh_project() {
+
+}
+
 run_all_tests_in_this_script

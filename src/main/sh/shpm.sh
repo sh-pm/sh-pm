@@ -510,14 +510,17 @@ shpm_update_itself_after_git_clone() {
 }
 
 set_dependency_repository(){
-	local DEP_ARTIFACT_ID="$1"
-	local R_DEP_REPOSITORY
+	local DEP_ARTIFACT_ID
+	local R2_DEP_REPOSITORY # (R)eference (2)nd: will be attributed to 2nd param by reference	
+	local ARTIFACT_DATA
 	
-	local ARTIFACT_DATA="${DEPENDENCIES[$DEP_ARTIFACT_ID]}"
+	DEP_ARTIFACT_ID="$1"
+	ARTIFACT_DATA="${DEPENDENCIES[$DEP_ARTIFACT_ID]}"
+	
 	if [[ "$ARTIFACT_DATA" == *"@"* ]]; then
-		R_DEP_REPOSITORY=$( echo "$ARTIFACT_DATA" | cut -d "@" -f 2 | xargs ) #xargs is to trim string!
+		R2_DEP_REPOSITORY=$( echo "$ARTIFACT_DATA" | cut -d "@" -f 2 | xargs ) #xargs is to trim string!
 		
-		if [[ "$R_DEP_REPOSITORY" == "" ]]; then
+		if [[ "$R2_DEP_REPOSITORY" == "" ]]; then
 			shpm_log "Error in $DEP_ARTIFACT_ID dependency: Inform a repository after '@' in $DEPENDENCIES_FILENAME"
 			exit 1
 		fi
@@ -526,22 +529,24 @@ set_dependency_repository(){
 		exit 1
 	fi
 	
-	eval "$2=$R_DEP_REPOSITORY"
+	eval "$2=$R2_DEP_REPOSITORY"
 }
 
 set_dependency_version(){
-	local DEP_ARTIFACT_ID="$1"
-	local R_DEP_VERSION	
+	local DEP_ARTIFACT_ID
+	local R2_DEP_VERSION	# (R)eference (2)nd: will be attributed to 2nd param by reference
+	
+	DEP_ARTIFACT_ID="$1"
 	
 	local ARTIFACT_DATA="${DEPENDENCIES[$DEP_ARTIFACT_ID]}"
 	if [[ "$ARTIFACT_DATA" == *"@"* ]]; then
-		R_DEP_VERSION=$( echo "$ARTIFACT_DATA" | cut -d "@" -f 1 | xargs ) #xargs is to trim string!						
+		R2_DEP_VERSION=$( echo "$ARTIFACT_DATA" | cut -d "@" -f 1 | xargs ) #xargs is to trim string!						
 	else
 		shpm_log "Error in $DEP_ARTIFACT_ID dependency: Inform a repository after '@' in $DEPENDENCIES_FILENAME"
 		exit 1
 	fi
 	
-	eval "$2=$R_DEP_VERSION"
+	eval "$2=$R2_DEP_VERSION"
 }
 
 update_dependency() {
@@ -739,70 +744,6 @@ publish_release() {
 	cp "$FILE_PATH" "$RELEASES_PATH" 
 	
 	create_new_remote_branch_from_master_branch "$VERSION" 
-}
-
-send_to_sh_archiva () {
-	local VERBOSE=$1
-
-	if [[ "$SSO_API_AUTHENTICATION_URL" == "" ]]; then
-		shpm_log "In order to publish release, you must define SSO_API_AUTHENTICATION_URL variable in your pom.sh."
-		exit 1
-	fi
-
-	clean_release "$ROOT_DIR_PATH"
-	
-	build_release
-
-	shpm_log_operation "Starting publish release process"
-	
-	local HOST=${REPOSITORY[host]}
-	local PORT=${REPOSITORY[port]}	
-
-	local TARGET_FOLDER=$ARTIFACT_ID"-"$VERSION
-	local TGZ_FILE_NAME=$TARGET_FOLDER".tar.gz"
-	local FILE_PATH=$TARGET_DIR_PATH/$TGZ_FILE_NAME
-
-
-	local TARGET_REPO="https://$HOST:$PORT/sh-archiva/snapshot/$GROUP_ID/$ARTIFACT_ID/$VERSION"
-	shpm_log "----------------------------------------------------------------------------"
-	shpm_log "From: $FILE_PATH"
-	shpm_log "  To: $TARGET_REPO"
-	shpm_log "----------------------------------------------------------------------------"
-	
-	echo Username:
-	read -r USERNAME
-	
-	echo Password:
-	read -r -s PASSWORD
-	
-	shpm_log "Authenticating user \"$USERNAME\" in $SSO_API_AUTHENTICATION_URL ..."
-	#echo "curl -s -X POST -d '{"username" : "'"$USERNAME"'", "password": "'"$PASSWORD"'"}' -H 'Content-Type: application/json' "$SSO_API_AUTHENTICATION_URL""	
-	TOKEN=$( curl -s -X POST -d '{"username" : "'"$USERNAME"'", "password": "'"$PASSWORD"'"}' -H 'Content-Type: application/json' "$SSO_API_AUTHENTICATION_URL" )
-	
-	if [[ "$TOKEN" == "" ]]; then
-		shpm_log "Authentication failed"
-		exit 2
-	else
-		shpm_log "Authentication successfull"
-		shpm_log "Sending release to repository $TARGET_REPO  ..."
-		TOKEN_HEADER="Authorization: Bearer $TOKEN"
-		
-		CURL_OPTIONS="-s"
-		if [[ "$VERBOSE" == "true" ]]; then
-		    CURL_OPTIONS="-v"
-		fi
-			
-		MSG_RETURNED=$( curl "$CURL_OPTIONS" -F file=@"$FILE_PATH" -H "$TOKEN_HEADER" "$TARGET_REPO" )
-		shpm_log "Sended"
-		
-		shpm_log "Return received from repository:"
-		shpm_log "----------------------------------------------------------------------------"
-		shpm_log "$MSG_RETURNED"
-		shpm_log "----------------------------------------------------------------------------"
-		
-		shpm_log "Done"
-	fi 
-
 }
 
 run_shellcheck() {
@@ -1097,15 +1038,15 @@ do_coverage_analysis() {
 			decrease_g_indent
 		fi
 		
-		if [ $TOTAL_FUNCTIONS_WITH_TEST_COUNT -gt 0 ]; then 
-			PERCENT_COVERAGE=$(bc <<< "scale=2; $TOTAL_FUNCTIONS_WITH_TEST_COUNT / $TOTAL_FUNCTIONS_FOUNDED_COUNT * 100")
+		if [ "$FILE_FUNCTIONS_COUNT" -gt 0 ]; then 
+			PERCENT_COVERAGE=$(bc <<< "scale=2; $FILE_FUNCTIONS_WITH_TEST_COUNT / $FILE_FUNCTIONS_COUNT * 100")
 		else
 			PERCENT_COVERAGE=0
 		fi
 		
 		shpm_log ""
 		shpm_log "Found $FILE_FUNCTIONS_COUNT function(s) in $filename. $FILE_FUNCTIONS_WITH_TEST_COUNT function(s) have tests."
-		shpm_log ""
+		shpm_log "Coverage in $filename: $PERCENT_COVERAGE"
 		shpm_log "FILE: $filename - Analysis End"
 	
 		decrease_g_indent
@@ -1125,13 +1066,20 @@ do_coverage_analysis() {
 	shpm_log "Found $TOTAL_FUNCTIONS_FOUNDED_COUNT function(s) in $TOTAL_FILES_ANALYSED_COUNT file(s) analysed. $TOTAL_FUNCTIONS_WITH_TEST_COUNT function(s) have tests."
 	shpm_log ""
 	
-	shpm_log "Coverage in %:"
+	shpm_log "Total Coverage in %:"
 	SHPM_LOG_DISABLED="$FALSE"
 	
 	echo "$TOTAL_COVERAGE" # this is a "return" value for this function	
 }
 
 compile_sh_project() {
+	
+	if [[ ! -f "$MANIFEST_FILE_PATH" ]]; then
+		shpm_log "$MANIFEST_FILE_PATH not found!"
+		return $FALSE
+	fi
+	
+	local FILE_ENTRY_POINT
 	
 	local FILE_WITH_CAT_SH_LIBS
 	local FILE_WITH_CAT_SH_SRCS
@@ -1140,18 +1088,31 @@ compile_sh_project() {
 	local COMPILED_FILE_NAME
 	local COMPILED_FILE_PATH
 	
-	local REGEX_INCLUDE_LIB_AND_FILE
-	local REGEX_SHEBANG
+	local INCLUDE_LIB_AND_FILE
+	local SHEBANG_FIRST_LINE
+	local PATTERN_INCLUDE_BOOTSTRAP_FILE_1
+	local PATTERN_INCLUDE_BOOTSTRAP_FILE_2
 	local PATTERN_INCLUDE_BOOTSTRAP_FILE
+	
+	local SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_1
+	local SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_2
+	local SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE
+	
+	FILE_ENTRY_POINT=$( grep "$MANIFEST_P_ENTRY_POINT_FILE" "$MANIFEST_FILE_PATH" | cut -d '=' -f 2 )
+	
+	if [[ -z "$FILE_ENTRY_POINT" ]]; then
+		shpm_log "Inform $MANIFEST_P_ENTRY_POINT_FILE value in file $MANIFEST_FILE_PATH!"
+		return $FALSE
+	fi
 	
 	FILE_WITH_CAT_SH_LIBS="$TMP_DIR_PATH/lib_files_concat"
 	FILE_WITH_CAT_SH_SRCS="$TMP_DIR_PATH/sh_files_concat"
 	FILE_WITH_SEPARATOR="$TMP_DIR_PATH/separator"
 	FILE_WITH_BOOTSTRAP_SANITIZED="$TMP_DIR_PATH/$BOOTSTRAP_FILENAME"
 	
-   create_path_if_not_exists "$TARGET_DIR_PATH"
+    create_path_if_not_exists "$TARGET_DIR_PATH"
    
-   COMPILED_FILE_NAME="$( basename "$ROOT_DIR_PATH" )"".sh"
+    COMPILED_FILE_NAME="$( basename "$ROOT_DIR_PATH" )"".sh"
 	
 	COMPILED_FILE_PATH="$TARGET_DIR_PATH/$COMPILED_FILE_NAME"
 	
@@ -1168,27 +1129,21 @@ compile_sh_project() {
 	
 	printf "\n# #####################################################################################################################################\n" > "$FILE_WITH_SEPARATOR"	
 
-   # Ensure \n in end of file to prevent file concatenation errors
-	find "$LIB_DIR_PATH"  -type f ! -path "*sh-pm*" ! -name "$DEPENDENCIES_FILENAME" ! -name "$SCRIPT_NAME" -name '*.sh' -exec sed -i -e '$a\n\n' {} \;
+    # Ensure \n in end of file to prevent file concatenation errors
+	find "$LIB_DIR_PATH"  -type f ! -path "*sh-pm*" ! -name "$DEPENDENCIES_FILENAME" ! -name "$SCRIPT_NAME" -name '*.sh' -exec sed -i -e '$a\' {} \;
 	
 	# Concat all .sh lib files that will be used in compile
 	find "$LIB_DIR_PATH"  -type f ! -path "*sh-pm*" ! -name "$DEPENDENCIES_FILENAME" ! -name "$SCRIPT_NAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_LIBS""_tmp"
 
-	# fix bug caused in files without \n in last line	
-	sed -i 's/}#!\//}\n\n#!/' "$FILE_WITH_CAT_SH_LIBS""_tmp"
-	
 	# Remove problematic lines in all .sh lib files
 	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" <"$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_LIBS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS""_tmp"
 
    # Ensure \n in end of file to prevent file concatenation errors
-	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec sed -i -e '$a\n\n' {} \;
+	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec sed -i -e '$a\' {} \;
 	
 	# Concat all .sh src files that will be used in compile
 	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_SRCS""_tmp"
-	
-	# fix bug caused in files without \n in last line
-	sed -i 's/}#!\//}\n\n#!/' "$FILE_WITH_CAT_SH_SRCS""_tmp"
 	
 	# Remove problematic lines in all .sh lib files
 	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" <"$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_SRCS"
