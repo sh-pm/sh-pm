@@ -4,6 +4,8 @@ source ../../../bootstrap.sh
 
 SHPM_LOG_DISABLED="$FALSE"
 
+SCRIPT_NAME=$ARTIFACT_ID # from pom.sh
+
 G_SHPMLOG_TAB="  "
 G_SHPMLOG_INDENT=""
 
@@ -1134,6 +1136,7 @@ compile_sh_project() {
 	local FILE_WITH_CAT_SH_LIBS
 	local FILE_WITH_CAT_SH_SRCS
 	local FILE_WITH_SEPARATOR
+	local FILE_WITH_BOOTSTRAP_SANITIZED
 	local COMPILED_FILE_NAME
 	local COMPILED_FILE_PATH
 	
@@ -1144,6 +1147,7 @@ compile_sh_project() {
 	FILE_WITH_CAT_SH_LIBS="$TMP_DIR_PATH/lib_files_concat"
 	FILE_WITH_CAT_SH_SRCS="$TMP_DIR_PATH/sh_files_concat"
 	FILE_WITH_SEPARATOR="$TMP_DIR_PATH/separator"
+	FILE_WITH_BOOTSTRAP_SANITIZED="$TMP_DIR_PATH/$BOOTSTRAP_FILENAME"
 	
    create_path_if_not_exists "$TARGET_DIR_PATH"
    
@@ -1151,35 +1155,64 @@ compile_sh_project() {
 	
 	COMPILED_FILE_PATH="$TARGET_DIR_PATH/$COMPILED_FILE_NAME"
 	
-	REGEX_INCLUDE_LIB_AND_FILE="^include_.+i"
-	REGEX_SHEBANG="^#\!"
-	PATTERN_INCLUDE_BOOTSTRAP_FILE="source ./bootstrap.sh"
+	INCLUDE_LIB_AND_FILE="include_lib\|include_file"
+	SHEBANG_FIRST_LINE="#!/bin/bash\|#!/usr/bin/env bash"
 	
-	find "$LIB_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_LIBS""_tmp"
+	PATTERN_INCLUDE_BOOTSTRAP_FILE_1="source ./$BOOTSTRAP_FILENAME"
+	PATTERN_INCLUDE_BOOTSTRAP_FILE_2="source ../../../$BOOTSTRAP_FILENAME"
+	PATTERN_INCLUDE_BOOTSTRAP_FILE="$PATTERN_INCLUDE_BOOTSTRAP_FILE_1\|$PATTERN_INCLUDE_BOOTSTRAP_FILE_2"
 	
-	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" <"$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -E -v "$REGEX_SHEBANG" | grep -E -v "$REGEX_INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_LIBS"
+	SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_1='source "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"'
+	SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_2='source "$ROOT_DIR_PATH/'$DEPENDENCIES_FILENAME'"'
+	SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE="$SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_1\|$SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_2"
+	
+	printf "\n# #####################################################################################################################################\n" > "$FILE_WITH_SEPARATOR"	
+
+   # Ensure \n in end of file to prevent file concatenation errors
+	find "$LIB_DIR_PATH"  -type f ! -path "*sh-pm*" ! -name "$DEPENDENCIES_FILENAME" ! -name "$SCRIPT_NAME" -name '*.sh' -exec sed -i -e '$a\n\n' {} \;
+	
+	# Concat all .sh lib files that will be used in compile
+	find "$LIB_DIR_PATH"  -type f ! -path "*sh-pm*" ! -name "$DEPENDENCIES_FILENAME" ! -name "$SCRIPT_NAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_LIBS""_tmp"
+
+	# fix bug caused in files without \n in last line	
+	sed -i 's/}#!\//}\n\n#!/' "$FILE_WITH_CAT_SH_LIBS""_tmp"
+	
+	# Remove problematic lines in all .sh lib files
+	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" <"$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_LIBS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS""_tmp"
+
+   # Ensure \n in end of file to prevent file concatenation errors
+	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec sed -i -e '$a\n\n' {} \;
 	
+	# Concat all .sh src files that will be used in compile
 	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec cat {} + > "$FILE_WITH_CAT_SH_SRCS""_tmp"
 	
-	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" <"$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -E -v "$REGEX_SHEBANG" | grep -E -v "$REGEX_INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_SRCS"
+	# fix bug caused in files without \n in last line
+	sed -i 's/}#!\//}\n\n#!/' "$FILE_WITH_CAT_SH_SRCS""_tmp"
+	
+	# Remove problematic lines in all .sh lib files
+	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" <"$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_SRCS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS""_tmp"
+
+	# Remove problematic lines in bootstrap file
+	grep -v "$SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE" < "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" | grep -v "$SHEBANG_FIRST_LINE" > "$FILE_WITH_BOOTSTRAP_SANITIZED"  
 
 	remove_file_if_exists "$COMPILED_FILE_PATH"
 	
-	printf "\n# ================================================================================================\n" > "$FILE_WITH_SEPARATOR"	
 	
 	cat \
-	"$FILE_WITH_SEPARATOR" "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" \
 	"$FILE_WITH_SEPARATOR" "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"  \
+	"$FILE_WITH_SEPARATOR" "$FILE_WITH_BOOTSTRAP_SANITIZED" \
 	"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_LIBS" \
 	"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_SRCS" \
 		> "$COMPILED_FILE_PATH"
 	
+	# Remove extra lines
 	sed -i '/^$/d' "$COMPILED_FILE_PATH"
 	
 	remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS"
+	remove_file_if_exists "$FILE_WITH_BOOTSTRAP_SANITIZED"
 	
 	chmod 755 "$COMPILED_FILE_PATH"
 }

@@ -95,7 +95,7 @@ ECHO_COLOR_NC=$ECHO_COLOR_ESC_CHAR'[0m' # No Color
 # =================================
 # Load dependencies
 # =================================
-source "$ROOT_DIR_PATH/pom.sh"
+source "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"
 
 # =================================
 # Include Management Libs and Files
