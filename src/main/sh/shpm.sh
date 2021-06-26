@@ -161,8 +161,6 @@ print_help() {
     echo "  lint                  Run ShellCheck (if exists) $SRC_DIR_SUBPATH folder"
     echo "  package               Create compressed file in $TARGET_DIR_PATH folder"
     echo "  publish               Publish code and builded file in GitHub repositories (remote and local)"
-	echo "  install               Install in local repository $LIB_DIR_SUBPATH"            
-	echo "  uninstall             Remove from local repository $LIB_DIR_SUBPATH"
 	echo ""
 	echo "EXAMPLES:"
 	echo "  ./shpm update"
@@ -187,11 +185,8 @@ run_sh_pm() {
 	local INSTALL=false	
 	local PUBLISH=false
 	local SKIP_SHELLCHECK=false
-	local AUTOUPDATE=false
-	local UNINSTALL=false
 	local COVERAGE=false
 	local CLEAN=false
-	
 	local VERBOSE=false	
 	
 	GIT_CMD=$(which git)
@@ -231,23 +226,12 @@ run_sh_pm() {
 				SKIP_SHELLCHECK="${!i:-false}"
 			fi
 			
-			if [[ "$ARG" == "install" ]];  then
-				INSTALL="true"
-			fi
-			
 			if [[ "$ARG" == "publish" ]];  then
 				PUBLISH="true"
 				i=$((i+1))
 				SKIP_SHELLCHECK="${!i:-false}"
 			fi
 			
-			if [[ "$ARG" == "autoupdate" ]];  then
-				AUTOUPDATE="true"
-			fi
-			
-			if [[ "$ARG" == "uninstall" ]];  then
-				UNINSTALL="true"
-			fi
 			if [[ "$ARG" == "init" ]];  then
 				INIT="true"
 			fi
@@ -363,67 +347,6 @@ update_dependencies() {
 	done
 	
 	cd "$ROOT_DIR_PATH" || exit 1
-	
-	shpm_log "Done"
-}
-
-uninstall_release () {
-	shpm_log_operation "Uninstall lib"
-	
-	local TARGET_FOLDER
-	local TGZ_FILE
-	local TGZ_FILE_PATH
-	
-	local ACTUAL_DIR
-
-	TARGET_FOLDER="$ARTIFACT_ID""-""$VERSION"
-	TGZ_FILE="$TARGET_FOLDER"".tar.gz"
-	TGZ_FILE_PATH="$TARGET_DIR_PATH/$TGZ_FILE"
-	
-	ACTUAL_DIR="$(pwd)"
-	
-	clean_release "$ROOT_DIR_PATH"
-	
-	build_release
-	
-	remove_tar_gz_from_folder "$LIB_DIR_PATH"
-	
-	remove_folder_if_exists "$LIB_DIR_PATH/$TARGET_FOLDER"
-	
-	cd "$ACTUAL_DIR" || exit
-	
-	shpm_log "Done"
-}
-
-install_release () {
-	local TARGET_FOLDER
-	local TGZ_FILE
-	local TGZ_FILE_PATH
-	
-	local ACTUAL_DIR
-
-	TARGET_FOLDER="$ARTIFACT_ID""-""$VERSION"
-	TGZ_FILE="$TARGET_FOLDER"".tar.gz"
-	TGZ_FILE_PATH="$TARGET_DIR_PATH/$TGZ_FILE"
-
-	ACTUAL_DIR=$(pwd)
-	
-	build_release
-	
-	uninstall_release
-	
-	shpm_log_operation "Install Release into local repository"
-	
-	shpm_log "Install $TGZ_FILE_PATH into $LIB_DIR_PATH ..."
-	cd "$LIB_DIR_PATH/" || exit
-	
-	cp "$TGZ_FILE_PATH" "$LIB_DIR_PATH/"	
-	
-	tar -xzf "$TGZ_FILE"
-		
-	remove_file_if_exists "$TGZ_FILE_PATH"
-	
-	cd "$ACTUAL_DIR" || exit
 	
 	shpm_log "Done"
 }
@@ -832,26 +755,6 @@ run_all_tests() {
 	shpm_log "Done"
 }
 
-auto_update() {
-
-	shpm_log_operation "Running sh-pm auto update ..."
-	 
-    local HOST=${REPOSITORY[host]}
-	local PORT=${REPOSITORY[port]}	
-	
-	for DEP_ARTIFACT_ID in "${!DEPENDENCIES[@]}"; do 
-	    if [[ "$DEP_ARTIFACT_ID" == "sh-pm" ]]; then		
-			update_dependency "$DEP_ARTIFACT_ID"
-			
-			shpm_log "Done"
-	        exit 0    
-	    fi
-	done
-	
-	shpm_log "Could not update sh-pm: sh-pm not present in dependencies of pom.sh"
-	exit 1004
-}
-
 init_project_structure() {
 
 	shpm_log_operation "Running sh-pm init ..."
@@ -1120,9 +1023,9 @@ compile_sh_project() {
 	FILE_WITH_SEPARATOR="$TMP_DIR_PATH/separator"
 	FILE_WITH_BOOTSTRAP_SANITIZED="$TMP_DIR_PATH/$BOOTSTRAP_FILENAME"
 	
-   create_path_if_not_exists "$TARGET_DIR_PATH"
+   	create_path_if_not_exists "$TARGET_DIR_PATH"
    
-   COMPILED_FILE_NAME="$( basename "$ROOT_DIR_PATH" )"".sh"
+   	COMPILED_FILE_NAME="$( basename "$ROOT_DIR_PATH" )"".sh"
 	
 	COMPILED_FILE_PATH="$TARGET_DIR_PATH/$COMPILED_FILE_NAME"
 	
@@ -1143,9 +1046,9 @@ compile_sh_project() {
 	shpm_log "Running compile pipeline:"
 	shpm_log ""
 
-   shpm_log "- Prepare libraries:"
-   increase_g_indent
-   shpm_log "- Ensure \\\n in end of lib files to prevent file concatenation errors ..."
+   	shpm_log "- Prepare libraries:"
+   	increase_g_indent
+   	shpm_log "- Ensure \\\n in end of lib files to prevent file concatenation errors ..."
 	find "$LIB_DIR_PATH"  -type f ! -path "*sh-pm*" ! -name "$DEPENDENCIES_FILENAME" ! -name "$SCRIPT_NAME" -name '*.sh' -exec sed -i -e '$a\' {} \;
 	
 	shpm_log "- Concat all .sh lib files that will be used in compile ..."
@@ -1154,11 +1057,11 @@ compile_sh_project() {
 	shpm_log "- Remove problematic lines in all .sh lib files ..."
 	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" <"$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_LIBS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS""_tmp"
-   decrease_g_indent
+   	decrease_g_indent
 
-   shpm_log "- Prepare source code:"
-   increase_g_indent
-   shpm_log "- Ensure \\\n in end of src files to prevent file concatenation errors ..."
+   	shpm_log "- Prepare source code:"
+   	increase_g_indent
+   	shpm_log "- Ensure \\\n in end of src files to prevent file concatenation errors ..."
 	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec sed -i -e '$a\' {} \;
 	
 	shpm_log "- Concat all .sh src files that will be used in compile ..."
@@ -1170,7 +1073,7 @@ compile_sh_project() {
 
 	shpm_log "- Remove problematic lines in $ROOT_DIR_PATH/$BOOTSTRAP_FILENAME file ..."
 	grep -v "$SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE" < "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" | grep -v "$SHEBANG_FIRST_LINE" > "$FILE_WITH_BOOTSTRAP_SANITIZED"  
-   decrease_g_indent
+   	decrease_g_indent
 
 	remove_file_if_exists "$COMPILED_FILE_PATH"
 	
@@ -1195,11 +1098,11 @@ compile_sh_project() {
 	shpm_log "- Grant permissions in compiled file ..."
 	chmod 755 "$COMPILED_FILE_PATH"
 
-   shpm_log ""	
+   	shpm_log ""	
 	shpm_log "Compile pipeline finish."
-   shpm_log ""
+   	shpm_log ""
 	shpm_log "Compile successfull! File generated in:" "green"
-	shpm_log "  $COMPILED_FILE_PATH"
+	shpm_log "  |$COMPILED_FILE_PATH|"
 	shpm_log ""
 }
 

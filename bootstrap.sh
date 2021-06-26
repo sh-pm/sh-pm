@@ -80,6 +80,7 @@ if [[ -z "$TEST_DIR_PATH" ]]; then
 	FOLDERNAME_4TEST="folder4test"
 	FILENAME_4TEST="file4test"
 	PROJECTNAME_4TEST="sh-project-only-4tests"	
+	PROJECTVERSION_4TEST="v4.2.0"
 fi
 
 if [[ -z "$TEST_RESOURCES_DIR_PATH" ]]; then

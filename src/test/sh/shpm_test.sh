@@ -16,6 +16,8 @@ ACTUAL_ROOT_DIR_PATH="$ROOT_DIR_PATH"
 ACTUAL_LIB_DIR_PATH="$LIB_DIR_PATH"
 ACTUAL_SRC_DIR_PATH="$SRC_DIR_PATH"
 ACTUAL_TARGET_DIR_PATH="$TARGET_DIR_PATH"
+ACTUAL_SRC_RESOURCES_DIR_PATH="$SRC_RESOURCES_DIR_PATH"
+ACTUAL_TEST_RESOURCES_DIR_PATH="$TEST_RESOURCES_DIR_PATH"
 
 
 # ======================================
@@ -58,8 +60,47 @@ remove_file_and_folders_4tests() {
 
 
 # ======================================
+# Before test Util function's
+# ======================================
+change_execution_to_project-only-4tests() {
+	change_execution_to_project "project-only-4tests"
+}
+
+change_execution_to_project() {
+	local PROJECTNAME="$1"
+
+	# -- DO Override shpm bootstrap load with sh-project-only-4tests bootstrap load -- 
+	ROOT_DIR_PATH="$TMP_DIR_PATH/$PROJECTNAME"
+	LIB_DIR_PATH="$ROOT_DIR_PATH/$LIB_DIR_SUBPATH"
+	SRC_DIR_PATH="$ROOT_DIR_PATH/$SRC_DIR_SUBPATH"
+	TARGET_DIR_PATH="$ROOT_DIR_PATH/$TARGET_DIR_SUBPATH"
+	SRC_RESOURCES_DIR_PATH="$ROOT_DIR_PATH/$SRC_RESOURCES_DIR_SUBPATH"
+	TEST_RESOURCES_DIR_PATH="$ROOT_DIR_PATH/$TEST_RESOURCES_DIR_SUBPATH"
+	
+	source "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME"
+	# -- -----------------------------------------------------------------------------
+}
+
+# ======================================
+# After
+# ======================================
+undo_change_execution_to_project() {
+	# -- UNDO Override shpm bootstrap load with sh-project-only-4tests bootstrap load --
+	ROOT_DIR_PATH="$ACTUAL_ROOT_DIR_PATH"
+	LIB_DIR_PATH="$ACTUAL_LIB_DIR_PATH"
+	SRC_DIR_PATH="$ACTUAL_SRC_DIR_PATH"
+	TARGET_DIR_PATH="$ACTUAL_TARGET_DIR_PATH"
+	SRC_RESOURCES_DIR_PATH="$ACTUAL_SRC_RESOURCES_DIR_SUBPATH"
+	TEST_RESOURCES_DIR_PATH="$ACTUAL_TEST_RESOURCES_DIR_SUBPATH"
+	
+	source "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME"
+	#-----------------------------------------------------------------------------------
+}
+
+# ======================================
 # Tests
 # ======================================
+
 test_evict_catastrophic_remove_when_ROOT_DIR_PATH_is_set() {	
 	source ../../../bootstrap.sh
 	evict_catastrophic_remove > /dev/null 2>&1
@@ -216,7 +257,7 @@ test_clean_release() {
 	local PROJECT_RELEASES_DIR
 	local RESULT
 	
-	download_from_git_to_tmp_folder "github.com/sh-pm" "sh-project-only-4tests" "v0.1.0"
+	download_from_git_to_tmp_folder "github.com/sh-pm" "sh-project-only-4tests" "$PROJECTVERSION_4TEST"
 	
 	PROJECT_DIR="$TMP_DIR_PATH/sh-project-only-4tests"
 	
@@ -246,9 +287,17 @@ test_update_dependency() {
 	local DEP_NAME
 	local DEP_VERSION
 	
+	local REPOSITORY
+	local DEP_ARTIFACT_ID
+	local DEP_VERSION
+	
+	REPOSITORY="github.com/sh-pm"
+	DEP_ARTIFACT_ID="sh-project-only-4tests"
+	DEP_VERSION="v0.2.0"
+	
 	remove_folder_if_exists "$TMP_DIR_PATH/sh-project-only-4tests"
 	
-	download_from_git_to_tmp_folder "github.com/sh-pm" "sh-project-only-4tests" "v0.1.0"
+	download_from_git_to_tmp_folder "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION"
 	
 	# -- DO Override shpm bootstrap load with sh-project-only-4tests bootstrap load -- 
 	ROOT_DIR_PATH="$TMP_DIR_PATH/sh-project-only-4tests"
@@ -317,9 +366,17 @@ test_update_dependency() {
 }
 
 test_update_dependencies() {
+	local REPOSITORY
+	local DEP_ARTIFACT_ID
+	local DEP_VERSION
+	
+	REPOSITORY="github.com/sh-pm"
+	DEP_ARTIFACT_ID="sh-project-only-4tests"
+	DEP_VERSION="v0.2.0"
+	
 	remove_folder_if_exists "$TMP_DIR_PATH/sh-project-only-4tests"
 	
-	download_from_git_to_tmp_folder "github.com/sh-pm" "sh-project-only-4tests" "v0.1.0"
+	download_from_git_to_tmp_folder "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION"
 	
 	# -- DO Override shpm bootstrap load with sh-project-only-4tests bootstrap load -- 
 	ROOT_DIR_PATH="$TMP_DIR_PATH/sh-project-only-4tests"
@@ -379,7 +436,7 @@ test_git_clone() {
 	
 	REPOSITORY="github.com/sh-pm"
 	DEP_ARTIFACT_ID="sh-project-only-4tests"
-	DEP_VERSION="v0.1.0"
+	DEP_VERSION="v0.2.0"
 
 	local ACTUAL_DIR
 	ACTUAL_DIR=$(pwd)
@@ -471,7 +528,7 @@ test_download_from_git_to_tmp_folder() {
 	
 	REPOSITORY="github.com/sh-pm"
 	DEP_ARTIFACT_ID="sh-project-only-4tests"
-	DEP_VERSION="v0.1.0"
+	DEP_VERSION="v0.2.0"
 
 	local ACTUAL_DIR
 	ACTUAL_DIR=$(pwd)
@@ -501,9 +558,17 @@ test_download_from_git_to_tmp_folder() {
 }
 
 test_set_dependency_repository() {
+	local REPOSITORY
+	local DEP_ARTIFACT_ID
+	local DEP_VERSION
+	
+	REPOSITORY="github.com/sh-pm"
+	DEP_ARTIFACT_ID="sh-project-only-4tests"
+	DEP_VERSION="v0.2.0"
+
 	remove_folder_if_exists "$TMP_DIR_PATH/sh-project-only-4tests"
 	
-	download_from_git_to_tmp_folder "github.com/sh-pm" "sh-project-only-4tests" "v0.1.0"
+	download_from_git_to_tmp_folder "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION"
 	
 	# -- DO Override shpm bootstrap load with sh-project-only-4tests bootstrap load -- 
 	ROOT_DIR_PATH="$TMP_DIR_PATH/sh-project-only-4tests"
@@ -535,9 +600,17 @@ test_set_dependency_repository() {
 }
 
 test_set_dependency_version() {
+	local REPOSITORY
+	local DEP_ARTIFACT_ID
+	local DEP_VERSION
+	
+	REPOSITORY="github.com/sh-pm"
+	DEP_ARTIFACT_ID="sh-project-only-4tests"
+	DEP_VERSION="v0.2.0"
+
 	remove_folder_if_exists "$TMP_DIR_PATH/sh-project-only-4tests"
 	
-	download_from_git_to_tmp_folder "github.com/sh-pm" "sh-project-only-4tests" "v0.1.0"
+	download_from_git_to_tmp_folder "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION"
 	
 	# -- DO Override shpm bootstrap load with sh-project-only-4tests bootstrap load -- 
 	ROOT_DIR_PATH="$TMP_DIR_PATH/sh-project-only-4tests"
@@ -555,7 +628,7 @@ test_set_dependency_version() {
 	
 	set_dependency_version "sh-pm" SHPM_DEP_VERSION
 	
-	assert_equals "v4.1.0" "$SHPM_DEP_VERSION"
+	assert_equals "v4.2.0" "$SHPM_DEP_VERSION"
 	
 	# -- UNDO Override shpm bootstrap load with sh-project-only-4tests bootstrap load --
 	ROOT_DIR_PATH="$ACTUAL_ROOT_DIR_PATH"
@@ -569,7 +642,45 @@ test_set_dependency_version() {
 }
 
 test_compile_sh_project() {
-	assert_fail "fkjlsa"
+	local REPOSITORY
+	local DEP_ARTIFACT_ID
+	local DEP_VERSION
+	
+	REPOSITORY="github.com/sh-pm"
+	DEP_ARTIFACT_ID="sh-project-only-4tests"
+	DEP_VERSION="v0.2.0"
+
+	remove_folder_if_exists "$TMP_DIR_PATH/$DEP_ARTIFACT_ID"
+
+	download_from_git_to_tmp_folder "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION"
+	assert_equals "$?" "$TRUE" || assert_fail "fail download from git to tmp folder."
+	
+	change_execution_to_project "sh-project-only-4tests"		
+	
+	clean_release "$TMP_DIR_PATH/$DEP_ARTIFACT_ID"
+	assert_equals "$?" "$TRUE" || assert_fail "clean release failed."
+	if [[ ! -d "/tmp/sh-project-only-4tests" ]]; then
+	  assert_fail "project folder not found."
+	fi
+	
+	compile_sh_project
+	assert_equals "$?" "$TRUE" || assert_fail "compilation failed."
+	
+	COMPILED_FILE_CONTENT_EXPECTED="$TEST_RESOURCES_DIR_PATH/sh-project-only-4tests.sh_compiled_file_expected"
+	COMPILED_FILE_CONTENT_OBTAINED="$TARGET_DIR_PATH/sh-project-only-4tests.sh"
+	
+	sleep 3
+	
+	file "$COMPILED_FILE_CONTENT_EXPECTED" && assert_success|| assert_fail "fail create compiled file"
+	
+	file "$COMPILED_FILE_CONTENT_OBTAINED" && assert_success || assert_fail "expected file in test not found"
+	
+	diff -b "$COMPILED_FILE_CONTENT_EXPECTED" "$COMPILED_FILE_CONTENT_OBTAINED"
+	assert_equals "$?" "$TRUE" || assert_fail "compile file content not equals to content file expected" 
+		
+	undo_change_execution_to_project
+	assert_equals "${#DEPENDENCIES[@]}" "2" || assert_fail "Problem restore/reload content of original pom.sh to undo override changes"
 }
+
 
 run_all_tests_in_this_script
