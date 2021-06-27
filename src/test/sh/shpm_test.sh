@@ -10,23 +10,25 @@ include_lib sh-unit
 include_file "$LIB_DIR_PATH/sh-unit-v1.5.5/asserts.sh"
 
 # ======================================
-# SetUp
+# "Set-Up"
 # ======================================
-ACTUAL_ROOT_DIR_PATH="$ROOT_DIR_PATH"
-ACTUAL_LIB_DIR_PATH="$LIB_DIR_PATH"
-ACTUAL_SRC_DIR_PATH="$SRC_DIR_PATH"
-ACTUAL_TARGET_DIR_PATH="$TARGET_DIR_PATH"
-ACTUAL_SRC_RESOURCES_DIR_PATH="$SRC_RESOURCES_DIR_PATH"
-ACTUAL_TEST_RESOURCES_DIR_PATH="$TEST_RESOURCES_DIR_PATH"
-
+set_up(){
+	ACTUAL_ROOT_DIR_PATH="$ROOT_DIR_PATH"
+	ACTUAL_LIB_DIR_PATH="$LIB_DIR_PATH"
+	ACTUAL_SRC_DIR_PATH="$SRC_DIR_PATH"
+	ACTUAL_TARGET_DIR_PATH="$TARGET_DIR_PATH"
+	ACTUAL_SRC_RESOURCES_DIR_PATH="$SRC_RESOURCES_DIR_PATH"
+	ACTUAL_TEST_RESOURCES_DIR_PATH="$TEST_RESOURCES_DIR_PATH"
+}
+set_up
 
 # ======================================
-# Teardown
+# "Teardown"
 # ======================================
-trap "clean_and_restore_env" EXIT
+trap "tear_down" EXIT
 
 
-clean_and_restore_env() {
+tear_down() {
 	remove_file_and_folders_4tests 
 	restore_initial_env_before_tests 
 }
@@ -42,7 +44,7 @@ restore_initial_env_before_tests() {
 
 remove_file_and_folders_4tests() {
 	local ACTUAL_DIR
-	ACTUAL_DIR=$(pwd)
+	ACTUAL_DIR=$(pwd -P)
 	
 	cd "$TMP_DIR_PATH" || exit 1
 
@@ -60,7 +62,7 @@ remove_file_and_folders_4tests() {
 
 
 # ======================================
-# Before test Util function's
+# Util Function's to run Before Test exec
 # ======================================
 change_execution_to_project-only-4tests() {
 	change_execution_to_project "project-only-4tests"
@@ -77,7 +79,7 @@ change_execution_to_project() {
 	SRC_RESOURCES_DIR_PATH="$ROOT_DIR_PATH/$SRC_RESOURCES_DIR_SUBPATH"
 	TEST_RESOURCES_DIR_PATH="$ROOT_DIR_PATH/$TEST_RESOURCES_DIR_SUBPATH"
 	
-	source "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME"
+	source "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" || echo "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME not exists" 
 	# -- -----------------------------------------------------------------------------
 }
 
@@ -390,7 +392,7 @@ test_update_dependencies() {
 	
 	update_dependencies
 	
-	if [[ ! -d "$LIB_DIR_PATH/sh-pm-v4.1.0" ]]; then
+	if [[ ! -d "$LIB_DIR_PATH/sh-pm-v4.2.0" ]]; then
 		assert_fail "Fail on update $DEP_NAME dependency sh-pm-v4.1.0"
 	else 
 		assert_success
@@ -408,7 +410,7 @@ test_update_dependencies() {
 		assert_success
 	fi
 	
-	if [[ ! -d "$LIB_DIR_PATH/sh-unit-v1.5.5" ]]; then
+	if [[ ! -d "$LIB_DIR_PATH/sh-unit-v1.5.8" ]]; then
 		assert_fail "Fail on update $DEP_NAME dependency sh-unit-v1.5.5"
 	else 
 		assert_success
@@ -682,5 +684,97 @@ test_compile_sh_project() {
 	assert_equals "${#DEPENDENCIES[@]}" "2" || assert_fail "Problem restore/reload content of original pom.sh to undo override changes"
 }
 
+test_run_release_package() {
+	local REPOSITORY
+	local DEP_ARTIFACT_ID
+	local DEP_VERSION
+	
+	REPOSITORY="github.com/sh-pm"
+	DEP_ARTIFACT_ID="sh-project-only-4tests"
+	DEP_VERSION="v0.2.0"
+
+	remove_file_and_folders_4tests
+
+	download_from_git_to_tmp_folder "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION"
+	assert_equals "$?" "$TRUE" || assert_fail "fail download from git to tmp folder."
+	
+	change_execution_to_project "sh-project-only-4tests"
+	
+	clean_release 
+	
+	#run_release_package ## TODO: INFINITE LOOP BECAULSE THIS RUN ALL TESTS AGAIN!!!
+	
+	if [[ ! -f "$TARGET_DIR_PATH/$DEP_ARTIFACT_ID""-""$DEP_VERSION"".tar.gz" ]]; then
+		assert_fail "fail in compile: file *.tar.gz not generated!"
+	else
+		assert_true
+	fi
+	
+	undo_change_execution_to_project
+	assert_equals "$( basename "$ROOT_DIR_PATH" )" "sh-pm" || assert_fail "Problem restore/reload content to undo override changes"
+	
+	remove_file_and_folders_4tests
+}
+
+test_create_new_remote_branch_from_master_branch() {
+	local NEW_BRANCH
+	NEW_BRANCH="newbranch4test"
+	
+	create_new_remote_branch_from_master_branch "$NEW_BRANCH"
+}
+
+test_publish_release() {
+	assert_fail "Not implement yet!"
+}
+
+test_init_project_structure() {
+	local REPOSITORY
+	local DEP_ARTIFACT_ID
+	local DEP_VERSION
+	
+	REPOSITORY="github.com/sh-pm"
+	DEP_ARTIFACT_ID="sh-project-only-4tests"
+	DEP_VERSION="v0.2.0"
+
+	remove_folder_if_exists "$TMP_DIR_PATH/$FOLDERNAME_4TEST"
+
+	create_path_if_not_exists "$TMP_DIR_PATH/$FOLDERNAME_4TEST"
+	touch "$TMP_DIR_PATH/$FOLDERNAME_4TEST/main.sh"
+	
+	create_path_if_not_exists "$TMP_DIR_PATH/$FOLDERNAME_4TEST/functions"	
+	touch "$TMP_DIR_PATH/$FOLDERNAME_4TEST/functions/functions.sh"
+	
+	sleep 1
+	
+	change_execution_to_project "$FOLDERNAME_4TEST"
+	 
+	init_project_structure
+
+	
+	if [[ ! -d "$TMP_DIR_PATH/$FOLDERNAME_4TEST/src/main/sh" || ! -d "$TMP_DIR_PATH/$FOLDERNAME_4TEST/src/test/sh" ]]; then
+		assert_fail "fail in folders generation."
+	else
+		assert_true
+	fi
+	
+	if [[ ! -f "$TMP_DIR_PATH/$FOLDERNAME_4TEST/src/main/sh/main.sh" || ! -d "$TMP_DIR_PATH/$FOLDERNAME_4TEST/src/test/sh/functions/functions.sh" ]]; then
+		assert_fail "fail in folders generation."
+	else
+		assert_true
+	fi
+	
+	undo_change_execution_to_project
+	assert_equals "$( basename "$ROOT_DIR_PATH" )" "sh-pm" || assert_fail "Problem restore/reload content to undo override changes"
+	
+	remove_file_and_folders_4tests
+}
+
+test_run_coverage_analysis() {
+	assert_fail "Not implement yet!"
+}
+
+test_do_coverage_analysis() {
+	assert_fail "Not implement yet!"
+}
 
 run_all_tests_in_this_script
