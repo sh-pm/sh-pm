@@ -7,7 +7,7 @@ include_lib sh-unit
 # ======================================
 # SUT
 # ======================================
-include_file "$LIB_DIR_PATH/sh-unit-v1.5.5/asserts.sh"
+# SPECIAL CASE: because shpm test itself it dont' need load itself!
 
 # ======================================
 # "Set-Up"
@@ -29,6 +29,7 @@ trap "tear_down" EXIT
 
 
 tear_down() {
+	trap "" EXIT
 	remove_file_and_folders_4tests 
 	restore_initial_env_before_tests 
 }
@@ -57,7 +58,9 @@ remove_file_and_folders_4tests() {
 	echo "   Removing $PROJECTNAME_4TEST"
 	rm -rf "$PROJECTNAME_4TEST"
 	
-	cd "$ACTUAL_DIR" || exit 1
+	if [[ -d "$ACTUAL_DIR" ]]; then
+		cd "$ACTUAL_DIR" || exit 1
+	fi
 }
 
 
@@ -717,10 +720,49 @@ test_run_release_package() {
 }
 
 test_create_new_remote_branch_from_master_branch() {
-	local NEW_BRANCH
-	NEW_BRANCH="newbranch4test"
+	local REPOSITORY
+	local DEP_ARTIFACT_ID
+	local DEP_VERSION
+
+	local NEW_BRANCH_NAME
 	
-	create_new_remote_branch_from_master_branch "$NEW_BRANCH"
+	GITHUB_HOST="github.com"
+	GITHUB_USER="sh-pm"
+	DEP_ARTIFACT_ID="sh-project-only-4tests"
+	REPOSITORY="$GITHUB_HOST/$GITHUB_USER"
+	DEP_VERSION="v0.2.0"
+	NEW_BRANCH_NAME="newbranch4test"
+
+	remove_file_and_folders_4tests
+
+	download_from_git_to_tmp_folder "$REPOSITORY" "$DEP_ARTIFACT_ID" "$DEP_VERSION"
+	assert_equals "$?" "$TRUE" || assert_fail "fail download from git to tmp folder."
+	
+	change_execution_to_project "sh-project-only-4tests"
+
+	read_git_username_and_password 
+	
+	create_new_remote_branch_from_master_branch \
+	  "$GITHUB_HOST" \
+	  "$GIT_REMOTE_USERNAME" \
+	  "$DEP_ARTIFACT_ID" \
+	  "$GIT_REMOTE_USERNAME" \
+	  "$GIT_REMOTE_PASSWORD" \
+	  "$NEW_BRANCH_NAME" 
+	
+	NEW_REMOTE_BRANCH=$( git branch -r | grep "origin/$NEW_BRANCH_NAME" | xargs )
+	assert_equals "$NEW_REMOTE_BRANCH" "origin/$NEW_BRANCH_NAME"
+	
+	echo "Deleting local $NEW_BRANCH_NAME branch"
+	git branch -d "origin/$NEW_BRANCH_NAME"
+	
+	echo "Deleting remote $NEW_BRANCH_NAME branch"
+	git push origin --delete "origin/$NEW_BRANCH_NAME"
+	
+	undo_change_execution_to_project
+	assert_equals "$( basename "$ROOT_DIR_PATH" )" "sh-pm" || assert_fail "Problem restore/reload content to undo override changes"
+	
+	remove_file_and_folders_4tests
 }
 
 test_publish_release() {
@@ -776,5 +818,3 @@ test_run_coverage_analysis() {
 test_do_coverage_analysis() {
 	assert_fail "Not implement yet!"
 }
-
-run_all_tests_in_this_script

@@ -2,12 +2,17 @@
 
 source ../../../bootstrap.sh
 
+include_lib sh-unit
+
 SHPM_LOG_DISABLED="$FALSE"
 
 SCRIPT_NAME=$ARTIFACT_ID # from pom.sh
 
 G_SHPMLOG_TAB="  "
 G_SHPMLOG_INDENT=""
+
+export GIT_REMOTE_USERNAME=""
+export GIT_REMOTE_PASSWORD=""
 
 #-----------------------------------
 evict_catastrophic_remove() {
@@ -19,6 +24,27 @@ evict_catastrophic_remove() {
 }
 evict_catastrophic_remove || exit 1
 #-----------------------------------
+
+read_git_username_and_password() {
+	if [[ -z "$GIT_REMOTE_USERNAME" ]]; then
+		echo "GitHub username: "
+		read -r GIT_REMOTE_USERNAME
+		
+		export GIT_REMOTE_USERNAME
+	else
+		echo "Advice: GitHub username already defined"
+	fi
+	
+	if [[ -z "$GIT_REMOTE_PASSWORD" ]]; then
+		echo "GitHub password: "
+		read -r -s GIT_REMOTE_PASSWORD		
+		GIT_REMOTE_PASSWORD="${GIT_REMOTE_PASSWORD//@/%40}"
+
+		export GIT_REMOTE_PASSWORD
+	else
+		echo "Advice: GitHub password already defined"
+	fi
+}
 
 create_path_if_not_exists() {
 	local PATH_TARGET
@@ -180,6 +206,7 @@ run_sh_pm() {
  	local INIT=false
 	local LINT=false	
 	local TEST=false
+	local TEST_CASES=""
 	local COMPILE=false
 	local PACKAGE=false
 	local INSTALL=false	
@@ -207,7 +234,8 @@ run_sh_pm() {
 			fi
 
 			if [[ "$ARG" == "test" ]];  then
-				TEST="true"
+				TEST="true"				
+				shift # this discard 1st param and do $@ consider params from 2nd param to end 				
 			fi
 			
 			if [[ "$ARG" == "clean" ]];  then
@@ -257,7 +285,7 @@ run_sh_pm() {
 	fi
 	
 	if [[ "$TEST" == "true" ]];  then
-		run_all_tests
+		run_all_tests $@
 	fi
 	
 	if [[ "$PACKAGE" == "true" ]];  then
@@ -612,38 +640,91 @@ run_release_package() {
 create_new_remote_branch_from_master_branch() {
 	local ACTUAL_BRANCH
 	local MASTER_BRANCH
-	local NEW_BRANCH
 	local GIT_CMD
-
-	NEW_BRANCH="$1"
+	
+	local GIT_HOST
+	local GIT_REPO
+	local GIT_PROJECT
+	local GIT_USER
+	local GIT_PASSWD
+	local NEW_BRANCH
+	
+	GIT_HOST="$1"
+	GIT_REPO="$2"
+	GIT_PROJECT="$3"
+	GIT_USER="$4"
+	GIT_PASSWD="$5"	
+	NEW_BRANCH="$6"
+	
+	GIT_ORIGINAL_URL="https://$GIT_HOST/$GIT_USER/$GIT_PROJECT.git"
+	
 	
 	if [[ "$NEW_BRANCH" != "" ]]; then
 		GIT_CMD=$( which git )
 		
+		# create new local branch
+		$GIT_CMP branch "$NEW_BRANCH"
+		
+		# go to new branch
+		$GIT_CMP checkout "$NEW_BRANCH"
+		
+		# commit changes to new local branch	 
+		$GIT_CMD add .
+		$GIT_CMD commit -m "$NEW_BRANCH" -m "- New release version"
+		
+		echo "==> $GIT_ORIGINAL_URL"
+		
 		cd "$ROOT_DIR_PATH" || exit 1;
-	
+		
+		# go to main/master 
+		echo "actual branch: $ACTUAL_BRANCH" 
+		if [[ "$ACTUAL_BRANCH" != "master" && "$ACTUAL_BRANCH" != "main" ]]; then
+			
+			echo "$GIT_CMD branch | grep \"master\|main\" | xargs"
+			MASTER_BRANCH=$( $GIT_CMD branch | grep "master\|main" | xargs )
+			
+			if [[ -z "$MASTER_BRANCH" ]]; then
+			 	MASTER_BRANCH=$( $GIT_CMD branch -r | grep -v "\->" | grep "main\|master" | xargs )			 	
+				local LOCALBRANCH="${MASTER_BRANCH/origin\//}"
+				
+				echo "checkout branch: |$MASTER_BRANCH|"
+				echo "$GIT_CMD checkout -b \"$LOCALBRANCH\" \"$MASTER_BRANCH\""
+				$GIT_CMD checkout -b "$LOCALBRANCH" "$MASTER_BRANCH" 
+			else
+				echo "checkout branch: |$MASTER_BRANCH|"
+				$GIT_CMD checkout "$MASTER_BRANCH" 
+			fi
+			
+		fi
+		
+		# merge last changes to master
+		$GIT_CMD merge "$NEW_BRANCH"
+			
 		$GIT_CMD add .
 	
 		$GIT_CMD commit -m "$NEW_BRANCH" -m "- New release version"
 		
+		echo "get actual branch"
+		echo "$GIT_CMD rev-parse --abbrev-ref HEAD | xargs"
 		ACTUAL_BRANCH=$( $GIT_CMD rev-parse --abbrev-ref HEAD | xargs )
-
-		if [[ "$ACTUAL_BRANCH" != "master" && "$ACTUAL_BRANCH" != "main" ]]; then
-			MASTER_BRANCH=$( $GIT_CMD branch | grep "master\|main" | xargs )
-			$GIT_CMD checkout "$MASTER_BRANCH" 
-		fi
 		
-		$GIT_CMD push origin "$MASTER_BRANCH"
+		echo "push to master"
+		$GIT_CMD push "$GIT_ORIGINAL_URL" "$MASTER_BRANCH"
 
+		echo "checkout"
 		$GIT_CMD checkout -b "$NEW_BRANCH"
 
-		$GIT_CMD push -u origin "$NEW_BRANCH"
+		echo "git push"
+		$GIT_CMD push -u "$GIT_ORIGINAL_URL" "$NEW_BRANCH"
 	fi
 }
 
 publish_release() {
 
+	local GIT_PROJECT
 	local VERBOSE=$1
+	
+	GIT_PROJECT="$( basename "$ROOT_DIR_PATH" )"
 
 	clean_release "$ROOT_DIR_PATH"
 	
@@ -666,7 +747,14 @@ publish_release() {
 
 	cp "$FILE_PATH" "$RELEASES_PATH" 
 	
-	create_new_remote_branch_from_master_branch "$VERSION" 
+	local GIT_REMOTE_USERNAME
+	local GIT_REMOTE_PASSWORD
+	
+	echo "---> $GIT_PROJECT"
+	
+	read_git_username_and_password
+	
+	create_new_remote_branch_from_master_branch "github.com" "$GIT_PROJECT" "$GIT_REMOTE_USERNAME" "$GIT_REMOTE_PASSWORD" "$VERSION"
 }
 
 run_shellcheck() {
@@ -721,37 +809,25 @@ run_shellcheck() {
 }
 
 run_all_tests() {
-
-	local ACTUAL_DIR
-	ACTUAL_DIR=$(pwd)
-	
 	shpm_log_operation "Searching unit test files to run ..."
-
+	
+	local TEST_FUNCTIONS 
+	TEST_FUNCTIONS=( "$@" )
 
 	if [[ -d "$TEST_DIR_PATH" ]]; then
 	
-		cd "$TEST_DIR_PATH" || exit
-		
 		local TEST_FILES
-		TEST_FILES=( $(ls ./*_test.sh 2> /dev/null) );
+		TEST_FILES=( $(ls "$TEST_DIR_PATH"/*_test.sh 2> /dev/null) );
 		
-		shpm_log "Found ${#TEST_FILES[@]} test files" 
-		if (( "${#TEST_FILES[@]}" > 0 )); then
-			for file in "${TEST_FILES[@]}"
-			do
-				shpm_log "Run file ..."
-				source "$file"
-			done
-		else
-			shpm_log "Nothing to test"
-		fi
+		shpm_log "Found ${#TEST_FILES[@]} test file(s)" 
+		shpm_log "\nStart execution of files ...\n"
+		
+		run_all_tests_in_files TEST_FILES TEST_FUNCTIONS
 	
 	else 
 		shpm_log "Nothing to test"
 	fi
 	
-	cd "$ACTUAL_DIR" || exit 1
-
 	shpm_log "Done"
 }
 
