@@ -80,7 +80,9 @@ if [[ -z "$TEST_DIR_PATH" ]]; then
 	FOLDERNAME_4TEST="folder4test"
 	FILENAME_4TEST="file4test"
 	PROJECTNAME_4TEST="sh-project-only-4tests"	
-	PROJECTVERSION_4TEST="v4.2.0"
+	PROJECTVERSION_4TEST="v0.2.0"
+	NEWBRANCH_4TEST="newbranch4test"
+	CHANGELOG_4TEST="changelog4test"
 fi
 
 if [[ -z "$TEST_RESOURCES_DIR_PATH" ]]; then
@@ -106,7 +108,7 @@ fi
 MANIFEST_FILENAME="manifest"
 MANIFEST_FILE_PATH="$SRC_RESOURCES_DIR_PATH/$MANIFEST_FILENAME"
 MANIFEST_P_ENTRY_POINT_FILE="entry_point_file"
-MANIFEST_P_ENTRY_POINT_FUNCTION="entry_point_file"
+MANIFEST_P_ENTRY_POINT_FUNCTION="entry_point_function"
 
 # =================================
 # echo -e colors
