@@ -15,6 +15,7 @@ include_file "$SRC_DIR_PATH/shpm_coverage.sh"
 include_file "$SRC_DIR_PATH/shpm_shellcheck.sh"
 include_file "$SRC_DIR_PATH//shpm_package_manager.sh"
 include_file "$SRC_DIR_PATH//shpm_testcases_runner.sh"
+include_file "$SRC_DIR_PATH//shpm_release_manager.sh"
 
 print_help() {
   	local SCRIPT_NAME

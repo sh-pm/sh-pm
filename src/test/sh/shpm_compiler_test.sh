@@ -71,7 +71,51 @@ test_array_contain_element() {
 	assert_equals "$?" "$FALSE" "Array NOT contains $E4 element"
 }
 
-_SKIP_test_run_compile_sh_project() {
+test_right_pad_string() {
+	local EXPECTED
+	local OBTAINED
+	
+	EXPECTED="#####################################################################################################################################"
+	OBTAINED=$( right_pad_string "" 133 "#" )
+	assert_equals "$EXPECTED" "$OBTAINED"
+	
+	EXPECTED=""
+	OBTAINED=$( right_pad_string "" 0 "#" )	
+	assert_equals "$EXPECTED" "$OBTAINED"
+	
+	EXPECTED="test------"
+	OBTAINED=$( right_pad_string "test" 10 "-" )	
+	assert_equals "$EXPECTED" "$OBTAINED"
+}
+
+test_left_pad_string() {
+	local EXPECTED
+	local OBTAINED
+	
+	EXPECTED="#####################################################################################################################################"
+	OBTAINED=$( left_pad_string "" 133 "#" )
+	assert_equals "$EXPECTED" "$OBTAINED"
+	
+	EXPECTED=""
+	OBTAINED=$( left_pad_string "" 0 "#" )	
+	assert_equals "$EXPECTED" "$OBTAINED"
+	
+	EXPECTED="------test"
+	OBTAINED=$( left_pad_string "test" 10 "-" )	
+	assert_equals "$EXPECTED" "$OBTAINED"
+		
+	EXPECTED="--------\n"
+	OBTAINED=$( left_pad_string "\n" 10 "-" )	
+	assert_equals "$EXPECTED" "$OBTAINED"
+}
+
+test_get_file_separator_delimiter_line() {
+	EXPECTED="\n###################################################################################################################################\n"
+	OBTAINED=$( get_file_separator_delimiter_line )
+	assert_equals "$EXPECTED" "$OBTAINED"
+}
+
+test_run_compile_sh_project() {
 	local REPOSITORY
 	local DEP_ARTIFACT_ID
 	local DEP_VERSION
@@ -93,7 +137,7 @@ _SKIP_test_run_compile_sh_project() {
 	  assert_fail "project folder not found."
 	fi
 	
-	compile_sh_project
+	run_compile_sh_project
 	assert_equals "$?" "$TRUE" || assert_fail "compilation failed."
 	
 	COMPILED_FILE_CONTENT_EXPECTED="$TEST_RESOURCES_DIR_PATH/sh-project-only-4tests.sh_compiled_file_expected"

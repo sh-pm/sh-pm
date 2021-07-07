@@ -30,6 +30,119 @@ array_contain_element() {
 	return "$FALSE"
 }
 
+display_file_entrypoint_error_message() {
+	shpm_log ""
+	shpm_log "ERROR: Inform \"$MANIFEST_P_ENTRY_POINT_FILE\" propertie value in file: $MANIFEST_FILE_PATH!" "red"
+	shpm_log ""
+	shpm_log "Exemple content of $MANIFEST_FILENAME file:"
+	shpm_log ""
+	shpm_log "$MANIFEST_P_ENTRY_POINT_FILE""=""foo.sh"
+	shpm_log "$MANIFEST_P_ENTRY_POINT_FUNCTION""=""main"
+	shpm_log ""
+}
+
+right_pad_string() {
+	printf %-"$2"s "$1" | tr ' ' "$3"
+}
+
+left_pad_string() {
+	printf %"$2"s "$1" | tr ' ' "$3"
+}
+
+get_file_separator_delimiter_line() {
+	echo $( right_pad_string "\n" 133 "#" )"\n"
+}
+
+ensure_newline_at_end_of_files() {
+	local FOLDER_PATH
+	FOLDER_PATH="$1"
+	
+	find "$FOLDER_PATH"  -type f ! -name "$DEPENDENCIES_FILENAME" ! -name 'sh-pm*' -name '*.sh' -exec sed -i -e '$a\' {} \;
+}
+
+ensure_newline_at_end_of_lib_files() {
+	shpm_log "- Ensure \\\n in end of lib files to prevent file concatenation errors ..."
+	ensure_newline_at_end_of_files "$LIB_DIR_PATH"
+}
+
+concat_all_lib_files() {
+	shpm_log "- Concat all .sh lib files that will be used in compile ..."
+			
+	local LIB_FILES=$( find "$LIB_DIR_PATH"  -type f ! -name "$DEPENDENCIES_FILENAME" ! -name 'sh-pm*' -name '*.sh' )
+	for file in ${LIB_FILES[@]}; do
+		echo "### $file ${FILE_SEPARATOR:0:-${#file}}" > "$FILE_WITH_SEPARATOR"
+		cat "$FILE_WITH_SEPARATOR" "$file" >> "$FILE_WITH_CAT_SH_LIBS""_tmp"
+	done
+}
+
+remove_problematic_lines_of_concat_lib_file() {
+	shpm_log "- Remove problematic lines in all .sh lib files ..."
+	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" < "$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_LIBS"
+}
+
+prepare_libraries() {
+	shpm_log "- Prepare libraries:"
+	
+   	increase_g_indent
+   	   	
+   	ensure_newline_at_end_of_lib_files
+   		                     
+	concat_all_lib_files
+	
+	remove_problematic_lines_of_concat_lib_file
+		
+	remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS""_tmp"
+		
+   	decrease_g_indent
+}
+
+display_running_compiler_msg() {
+	shpm_log ""	
+	shpm_log "Running compile pipeline:"
+	shpm_log ""
+}
+
+concat_all_src_files(){
+	shpm_log "- Concat all .sh src files that will be used in compile except entrypoint file ..."	
+	local SRC_FILES=$( find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "pom.sh" -name '*.sh' )
+	local FILE_ENTRYPOINT_PATH=""
+	
+	for file in ${SRC_FILES[@]}; do
+		if [[ "$FILE_ENTRY_POINT" == "$( basename "$file" )" ]]; then
+			FILE_ENTRYPOINT_PATH="$file"
+		else			
+			echo "### $file ${FILE_SEPARATOR:0:-${#file}}" > "$FILE_WITH_SEPARATOR"
+			cat "$FILE_WITH_SEPARATOR" "$file" >> "$FILE_WITH_CAT_SH_SRCS""_tmp"
+		fi 		
+	done
+}
+
+remove_problematic_lines_of_src_concat_file() {
+	shpm_log "- Remove problematic lines in all .sh src files ..."
+	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" < "$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_SRCS"
+	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS""_tmp"
+}
+
+prepare_source_code() {
+   	shpm_log "- Prepare source code:"
+   	increase_g_indent
+   	
+ 	ensure_newline_at_end_of_src_files
+	
+	concat_all_src_files
+	
+	remove_problematic_lines_of_src_concat_file
+
+	shpm_log "- Remove problematic lines in $ROOT_DIR_PATH/$BOOTSTRAP_FILENAME file ..."
+	grep -v "$SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE" < "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" | grep -v "$SHEBANG_FIRST_LINE" > "$FILE_WITH_BOOTSTRAP_SANITIZED"  
+   	decrease_g_indent
+}
+
+ensure_newline_at_end_of_src_files() {
+  	shpm_log "- Ensure \\\n in end of src files to prevent file concatenation errors ..."
+	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec sed -i -e '$a\' {} \;
+}
+
 run_compile_sh_project() {
 	
 	shpm_log_operation "Compile"
@@ -58,18 +171,12 @@ run_compile_sh_project() {
 	local SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_2
 	local SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE
 	
+	local FILE_SEPARATOR
+	
 	FILE_ENTRY_POINT=$( get_entry_point_file )
 	
 	if [[ -z "$FILE_ENTRY_POINT" ]]; then
-		shpm_log ""
-		shpm_log "ERROR: Inform \"$MANIFEST_P_ENTRY_POINT_FILE\" propertie value in file: $MANIFEST_FILE_PATH!" "red"
-		shpm_log ""
-		shpm_log "Exemple content of $MANIFEST_FILENAME file:"
-		shpm_log ""
-		shpm_log "$MANIFEST_P_ENTRY_POINT_FILE""=""foo.sh"
-		shpm_log "$MANIFEST_P_ENTRY_POINT_FUNCTION""=""main"
-		shpm_log ""
-		
+		display_file_entrypoint_error_message
 		return $FALSE
 	fi
 	
@@ -95,56 +202,13 @@ run_compile_sh_project() {
 	SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_2='source "$ROOT_DIR_PATH/'$DEPENDENCIES_FILENAME'"'
 	SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE="$SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_1\|$SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_2"
 	
-	local FILE_SEPARATOR="#####################################################################################################################################";	
+	FILE_SEPARATOR=$( get_file_separator_delimiter_line );	
 	
-	shpm_log ""	
-	shpm_log "Running compile pipeline:"
-	shpm_log "" 
+	display_running_compiler_msg
 
-   	shpm_log "- Prepare libraries:"
-   	increase_g_indent
-   	shpm_log "- Ensure \\\n in end of lib files to prevent file concatenation errors ..."
-	find "$LIB_DIR_PATH"  -type f ! -name "$DEPENDENCIES_FILENAME" ! -name 'sh-pm*' -name '*.sh' -exec sed -i -e '$a\' {} \;
-	                      
-	shpm_log "- Concat all .sh lib files that will be used in compile ..."		
-	local LIB_FILES=$( find "$LIB_DIR_PATH"  -type f ! -name "$DEPENDENCIES_FILENAME" ! -name 'sh-pm*' -name '*.sh' )
-	for file in ${LIB_FILES[@]}; do
-		echo "### $file ${FILE_SEPARATOR:0:-${#file}}" > "$FILE_WITH_SEPARATOR"
-		cat "$FILE_WITH_SEPARATOR" "$file" >> "$FILE_WITH_CAT_SH_LIBS""_tmp"
-	done
+   	prepare_libraries
 
-	shpm_log "- Remove problematic lines in all .sh lib files ..."
-	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" < "$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_LIBS"
-	remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS""_tmp"
-   	decrease_g_indent
-
-   	shpm_log "- Prepare source code:"
-   	increase_g_indent
-   	shpm_log "- Ensure \\\n in end of src files to prevent file concatenation errors ..."
-	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec sed -i -e '$a\' {} \;
-	
-	shpm_log "- Concat all .sh src files that will be used in compile except entrypoint file ..."
-	
-	local SRC_FILES=$( find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "pom.sh" -name '*.sh' )
-	local FILE_ENTRYPOINT_PATH=""
-	
-	for file in ${SRC_FILES[@]}; do
-		if [[ "$FILE_ENTRY_POINT" == "$( basename "$file" )" ]]; then
-			FILE_ENTRYPOINT_PATH="$file"
-		else			
-			echo "### $file ${FILE_SEPARATOR:0:-${#file}}" > "$FILE_WITH_SEPARATOR"
-			cat "$FILE_WITH_SEPARATOR" "$file" >> "$FILE_WITH_CAT_SH_SRCS""_tmp"
-		fi 		
-	done
-	
-	
-	shpm_log "- Remove problematic lines in all .sh src files ..."
-	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" < "$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_SRCS"
-	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS""_tmp"
-
-	shpm_log "- Remove problematic lines in $ROOT_DIR_PATH/$BOOTSTRAP_FILENAME file ..."
-	grep -v "$SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE" < "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" | grep -v "$SHEBANG_FIRST_LINE" > "$FILE_WITH_BOOTSTRAP_SANITIZED"  
-   	decrease_g_indent
+	prepare_source_code
 
 	remove_file_if_exists "$COMPILED_FILE_PATH"
 	
