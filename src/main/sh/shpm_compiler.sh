@@ -50,7 +50,7 @@ left_pad_string() {
 }
 
 get_file_separator_delimiter_line() {
-	echo $( right_pad_string "\n" 133 "#" )"\n"
+	echo -e $( right_pad_string "" 133 "#" )
 }
 
 ensure_newline_at_end_of_files() {
@@ -63,16 +63,6 @@ ensure_newline_at_end_of_files() {
 ensure_newline_at_end_of_lib_files() {
 	shpm_log "- Ensure \\\n in end of lib files to prevent file concatenation errors ..."
 	ensure_newline_at_end_of_files "$LIB_DIR_PATH"
-}
-
-concat_all_lib_files() {
-	shpm_log "- Concat all .sh lib files that will be used in compile ..."
-			
-	local LIB_FILES=$( find "$LIB_DIR_PATH"  -type f ! -name "$DEPENDENCIES_FILENAME" ! -name 'sh-pm*' -name '*.sh' )
-	for file in ${LIB_FILES[@]}; do
-		echo "### $file ${FILE_SEPARATOR:0:-${#file}}" > "$FILE_WITH_SEPARATOR"
-		cat "$FILE_WITH_SEPARATOR" "$file" >> "$FILE_WITH_CAT_SH_LIBS""_tmp"
-	done
 }
 
 remove_problematic_lines_of_concat_lib_file() {
@@ -96,31 +86,99 @@ prepare_libraries() {
    	decrease_g_indent
 }
 
-display_running_compiler_msg() {
-	shpm_log ""	
-	shpm_log "Running compile pipeline:"
-	shpm_log ""
+display_running_compiler_msg() {	
+	shpm_log "\nRunning compile pipeline:\n"
+}
+
+concat_all_lib_files() {
+	shpm_log "- Concat all .sh lib files that will be used in compile ..."
+			
+	local LIB_FILES=$( find "$LIB_DIR_PATH"  -type f ! -name "$DEPENDENCIES_FILENAME" ! -name 'sh-pm*' -name '*.sh' )
+	
+	local FILENAME
+	
+	update_section_separator "LIBRARIES"	
+	cat "$FILE_WITH_SEPARATOR" >> "$FILE_WITH_CAT_SH_LIBS""_tmp"
+	
+	for file in ${LIB_FILES[@]}; do
+	
+		update_file_separator "$file"
+		
+		cat "$FILE_WITH_SEPARATOR" "$file" >> "$FILE_WITH_CAT_SH_LIBS""_tmp"
+	done
+}
+
+update_section_separator() {
+	local STR_AUX="$1"
+	
+	local FILECONTENT_SEP=$( right_pad_string "#" 140 ">" )
+	
+	echo -e "\n\n$FILECONTENT_SEP\n# $STR_AUX \n$FILECONTENT_SEP\n\n" > "$FILE_WITH_SEPARATOR"
+}
+
+create_file_separator() {
+	local file="$1"
+	local PATH_TO_FILE_CONTAINING_SEPARATOR="$2"
+
+	FILENAME_AUX=$( basename "$file" )
+			
+	FILECONTENT_SEP=$( right_pad_string "" 110 "#" )
+	 		
+	echo "#### $FILENAME_AUX ${FILECONTENT_SEP:0:-${#FILENAME_AUX}}" > "$PATH_TO_FILE_CONTAINING_SEPARATOR"
+}
+
+update_file_separator() {
+	local file="$1"
+
+	FILENAME_AUX=$( basename "$file" )
+			
+	FILECONTENT_SEP=$( right_pad_string "" 110 "#" )
+	 		
+	echo "#### $FILENAME_AUX ${FILECONTENT_SEP:0:-${#FILENAME_AUX}}" > "$FILE_WITH_SEPARATOR"
 }
 
 concat_all_src_files(){
-	shpm_log "- Concat all .sh src files that will be used in compile except entrypoint file ..."	
+	shpm_log "- Concat all .sh src files that will be used in compile except entrypoint file ..."
+		
 	local SRC_FILES=$( find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "pom.sh" -name '*.sh' )
 	local FILE_ENTRYPOINT_PATH=""
 	
+	update_section_separator "SOURCES"	
+	
+	cat "$FILE_WITH_SEPARATOR" >> "$FILE_WITH_CAT_SH_SRCS""_tmp"
+	
 	for file in ${SRC_FILES[@]}; do
-		if [[ "$FILE_ENTRY_POINT" == "$( basename "$file" )" ]]; then
-			FILE_ENTRYPOINT_PATH="$file"
-		else			
-			echo "### $file ${FILE_SEPARATOR:0:-${#file}}" > "$FILE_WITH_SEPARATOR"
+		if [[ "$FILE_ENTRY_POINT" != "$( basename "$file" )" ]]; then
+			update_file_separator "$file"
 			cat "$FILE_WITH_SEPARATOR" "$file" >> "$FILE_WITH_CAT_SH_SRCS""_tmp"
 		fi 		
 	done
 }
 
+get_fileentrypoint_path(){
+	local SRC_FILES=$( find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "pom.sh" -name '*.sh' )
+	
+	for file in ${SRC_FILES[@]}; do
+		if [[ "$FILE_ENTRY_POINT" == "$( basename "$file" )" ]]; then
+			echo "$file"
+		fi	
+	done
+}
+
+
 remove_problematic_lines_of_src_concat_file() {
 	shpm_log "- Remove problematic lines in all .sh src files ..."
 	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" < "$FILE_WITH_CAT_SH_SRCS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_SRCS"
 	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS""_tmp"
+}
+
+remove_problematic_lines_of_entryfile() {
+	HANDLED_FILE_ENTRYPOINT_PATH=$( get_handled_fileentrypoint_path )
+	shpm_log "- Remove problematic lines in $HANDLED_FILE_ENTRYPOINT_PATH files ..."
+	
+	cp "$HANDLED_FILE_ENTRYPOINT_PATH" "$HANDLED_FILE_ENTRYPOINT_PATH""_tmp"
+	
+	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" < "$HANDLED_FILE_ENTRYPOINT_PATH""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$HANDLED_FILE_ENTRYPOINT_PATH"	
 }
 
 prepare_source_code() {
@@ -138,14 +196,74 @@ prepare_source_code() {
    	decrease_g_indent
 }
 
+prepare_dep_file() {
+	ensure_newline_at_end_of_dep_file
+	local DEP_FILE_PATH="$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME";
+	create_file_separator "$DEP_FILE_PATH" "$FILE_WITH_SEPARATOR""_dep"
+}
+
+prepare_bootstrap_file() {
+	ensure_newline_at_end_of_bootstrap_file
+	local BOOTSTRAP_FILE_PATH="$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME";
+	create_file_separator "$BOOTSTRAP_FILE_PATH" "$FILE_WITH_SEPARATOR""_bootstrap"
+}
+
+get_handled_fileentrypoint_path() {
+	local FILE_ENTRY_POINT_PATH="$1"
+	echo "$TMP_COMPILE_WORKDIR/$(basename $FILE_ENTRYPOINT_PATH)"
+}
+
+prepare_fileentrypoint(){
+	local FILE_ENTRY_POINT_PATH="$1"
+
+	create_file_separator "$FILE_ENTRYPOINT_PATH" "$FILE_WITH_SEPARATOR""_entrypoint"
+	
+	reset_tmp_compilation_dir "$TMP_COMPILE_WORKDIR"
+	
+	HANDLED_FILE_ENTRYPOINT_PATH=$( get_handled_fileentrypoint_path "$FILE_ENTRY_POINT_PATH" )
+	
+	cp "$FILE_ENTRYPOINT_PATH" "$HANDLED_FILE_ENTRYPOINT_PATH"
+	
+	ensure_newline_at_end_of_file "HANDLED_FILE_ENTRYPOINT_PATH"
+	
+	remove_problematic_lines_of_entryfile
+}
+
 ensure_newline_at_end_of_src_files() {
   	shpm_log "- Ensure \\\n in end of src files to prevent file concatenation errors ..."
 	find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "$DEPENDENCIES_FILENAME" -name '*.sh' -exec sed -i -e '$a\' {} \;
 }
 
-run_compile_sh_project() {
+ensure_newline_at_end_of_dep_file() {
+  	shpm_log "- Ensure \\\n in end of src files to prevent file concatenation errors ..."
+	find "$ROOT_DIR_PATH"  -type f ! -path "sh-pm*" -name "$DEPENDENCIES_FILENAME" -exec sed -i -e '$a\' {} \;
+}
+
+ensure_newline_at_end_of_bootstrap_file() {
+  	shpm_log "- Ensure \\\n in end of src files to prevent file concatenation errors ..."
+	find "$ROOT_DIR_PATH"  -type f ! -path "sh-pm*" -name "$BOOTSTRAP_FILENAME" -exec sed -i -e '$a\' {} \;
+}
+
+ensure_newline_at_end_of_file() {
+	local P_FILEPATH="$1"
+  	shpm_log "- Ensure \\\n in end of $( basename $P_FILEPATH ) file to prevent file concatenation errors ..."
+	sed -i -e '$a\' $P_FILEPATH
+}
+
+get_tmp_compilation_dir() {
+	echo "$TMP_DIR_PATH/compilation_$(date '+%s')"
+}
+
+reset_tmp_compilation_dir() {
+	local TMP_COMPILE_WORKDIR="$1"
 	
-	shpm_log_operation "Compile"
+	remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
+	create_path_if_not_exists "$TMP_COMPILE_WORKDIR"
+}
+
+run_compile_app() {
+	
+	shpm_log_operation "Compile Application"
 		
 	if [[ ! -f "$MANIFEST_FILE_PATH" ]]; then
 		shpm_log "\nERROR: $MANIFEST_FILE_PATH not found!\n" "red"
@@ -153,6 +271,9 @@ run_compile_sh_project() {
 	fi
 	
 	local FILE_ENTRY_POINT
+	local FILE_ENTRYPOINT_PATH
+	
+	local TMP_COMPILE_WORKDIR
 	
 	local FILE_WITH_CAT_SH_LIBS
 	local FILE_WITH_CAT_SH_SRCS
@@ -173,7 +294,12 @@ run_compile_sh_project() {
 	
 	local FILE_SEPARATOR
 	
-	FILE_ENTRY_POINT=$( get_entry_point_file )
+	FILE_ENTRY_POINT="$( get_entry_point_file )"
+	FILE_ENTRYPOINT_PATH="$( get_fileentrypoint_path )"
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir ) 
+	
+	reset_tmp_compilation_dir "$TMP_COMPILE_WORKDIR"	
 	
 	if [[ -z "$FILE_ENTRY_POINT" ]]; then
 		display_file_entrypoint_error_message
@@ -210,24 +336,24 @@ run_compile_sh_project() {
 
 	prepare_source_code
 
-	remove_file_if_exists "$COMPILED_FILE_PATH"
+	prepare_dep_file
 	
+	prepare_bootstrap_file
+		
+	prepare_fileentrypoint "$FILE_ENTRY_POINT_PATH"
+	HANDLED_FILE_ENTRYPOINT_PATH=$( get_handled_fileentrypoint_path "$FILE_ENTRY_POINT_PATH" )
+
 	shpm_log "- Generate compiled file ..."
 	
-	local DEP_FILE_PATH="$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME";
-	echo "### $DEP_FILE_PATH ${FILE_SEPARATOR:0:-${#DEP_FILE_PATH}}" > "$FILE_WITH_SEPARATOR""_dep"
+	remove_file_if_exists "$COMPILED_FILE_PATH"
 	
-	local BOOTSTRAP_FILE_PATH="$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME";
-	echo "### $BOOTSTRAP_FILE_PATH ${FILE_SEPARATOR:0:-${#BOOTSTRAP_FILE_PATH}}" > "$FILE_WITH_SEPARATOR""_bootstrap"
-		
-	echo "### $FILE_ENTRYPOINT_PATH ${FILE_SEPARATOR:0:-${#FILE_ENTRYPOINT_PATH}}" > "$FILE_WITH_SEPARATOR""_entrypoint"
-	
-	cat "$FILE_WITH_SEPARATOR""_dep" "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"  \
-	"$FILE_WITH_SEPARATOR""_bootstrap" "$FILE_WITH_BOOTSTRAP_SANITIZED" \
-	"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_LIBS" \
-	"$FILE_WITH_SEPARATOR""_entrypoint" "$FILE_ENTRYPOINT_PATH" \
-	"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_SRCS" \
-		> "$COMPILED_FILE_PATH"
+	cat \
+		"$FILE_WITH_SEPARATOR""_dep" "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"  \
+		"$FILE_WITH_SEPARATOR""_bootstrap" "$FILE_WITH_BOOTSTRAP_SANITIZED" \
+		"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_LIBS" \
+		"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_SRCS" \
+		"$FILE_WITH_SEPARATOR""_entrypoint" "$HANDLED_FILE_ENTRYPOINT_PATH" \
+			> "$COMPILED_FILE_PATH"
 	
 	shpm_log "- Remove extra lines ..."
 	sed -i '/^$/d' "$COMPILED_FILE_PATH"
@@ -241,6 +367,76 @@ run_compile_sh_project() {
 	
 	shpm_log "- Grant permissions in compiled file ..."
 	chmod 755 "$COMPILED_FILE_PATH"
+
+   	shpm_log ""	
+	shpm_log "Compile pipeline finish."
+   	shpm_log ""
+	shpm_log "Compile successfull! File generated in:" "green"
+	shpm_log "  |$COMPILED_FILE_PATH|"
+	shpm_log ""
+}
+
+
+run_compile_lib() {
+	
+	shpm_log_operation "Compile Library"
+	
+	local FILE_WITH_CAT_SH_SRCS
+	local FILE_WITH_SEPARATOR
+	local COMPILED_FILE_NAME
+	local COMPILED_FILE_PATH
+	
+	local INCLUDE_LIB_AND_FILE
+	local SHEBANG_FIRST_LINE
+	local PATTERN_INCLUDE_BOOTSTRAP_FILE_1
+	local PATTERN_INCLUDE_BOOTSTRAP_FILE_2
+	local PATTERN_INCLUDE_BOOTSTRAP_FILE
+	
+	local FILE_SEPARATOR
+	
+	FILE_WITH_CAT_SH_SRCS="$TMP_DIR_PATH/sh_files_concat"
+	FILE_WITH_SEPARATOR="$TMP_DIR_PATH/separator"
+	FILE_WITH_BOOTSTRAP_SANITIZED="$TMP_DIR_PATH/$BOOTSTRAP_FILENAME"
+	
+   	create_path_if_not_exists "$TARGET_DIR_PATH"
+   
+   	COMPILED_FILE_NAME=$( get_compiled_filename ) 
+	
+	COMPILED_FILE_PATH="$TARGET_DIR_PATH/$COMPILED_FILE_NAME"
+	
+	INCLUDE_LIB_AND_FILE="include_lib\|include_file"
+	SHEBANG_FIRST_LINE="#!/bin/bash\|#!/usr/bin/env bash"
+	
+	PATTERN_INCLUDE_BOOTSTRAP_FILE_1="source ./$BOOTSTRAP_FILENAME"
+	PATTERN_INCLUDE_BOOTSTRAP_FILE_2="source ../../../$BOOTSTRAP_FILENAME"
+	PATTERN_INCLUDE_BOOTSTRAP_FILE="$PATTERN_INCLUDE_BOOTSTRAP_FILE_1\|$PATTERN_INCLUDE_BOOTSTRAP_FILE_2"
+	
+	SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_1='source "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"'
+	SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_2='source "$ROOT_DIR_PATH/'$DEPENDENCIES_FILENAME'"'
+	SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE="$SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_1\|$SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_2"
+	
+	FILE_SEPARATOR=$( get_file_separator_delimiter_line );	
+	
+	display_running_compiler_msg
+
+	prepare_source_code
+
+	remove_file_if_exists "$COMPILED_FILE_PATH"
+	
+	shpm_log "- Generate compiled file ..."
+	
+	cat "$FILE_WITH_CAT_SH_SRCS" > "$COMPILED_FILE_PATH"
+	
+	shpm_log "- Remove extra lines ..."
+	sed -i '/^$/d' "$COMPILED_FILE_PATH"
+	
+	shpm_log "- Remove tmp files ..."
+	increase_g_indent
+	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS"
+	
+	decrease_g_indent
+	
+	shpm_log "- Grant permissions in compiled file ..."
 
    	shpm_log ""	
 	shpm_log "Compile pipeline finish."

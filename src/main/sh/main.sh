@@ -81,12 +81,18 @@ run_sh_pm() {
 				run_coverage_analysis
 			fi
 						
-			if [[ "$ARG" == "compile" ]];  then
-				COMPILE="true"
+			if [[ "$ARG" == "compile_app" ]];  then				
 				i=$((i+1))
 				SKIP_SHELLCHECK="${!i:-false}"
 				
-				run_compile_sh_project
+				run_compile_app
+			fi
+			
+			if [[ "$ARG" == "compile_lib" ]];  then				
+				i=$((i+1))
+				SKIP_SHELLCHECK="${!i:-false}"
+				
+				run_compile_lib
 			fi
 		
 			if [[ "$ARG" == "package" ]];  then
