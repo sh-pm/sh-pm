@@ -24,12 +24,12 @@ trap "tear_down" EXIT
 # Tests
 # ======================================
 
-test_get_entry_point_file() {
+test_get_entrypoint_filename() {
 	local OBTAINED
 	local EXPECTED
 	
 	EXPECTED="main.sh"
-	OBTAINED=$( get_entry_point_file )
+	OBTAINED=$( get_entrypoint_filename )
 	
 	assert_equals "$EXPECTED" "$OBTAINED"
 }
@@ -110,9 +110,57 @@ test_left_pad_string() {
 }
 
 test_get_file_separator_delimiter_line() {
+	local EXPECTED
+	local OBTAINED
+	
 	EXPECTED="\n###################################################################################################################################\n"
 	OBTAINED=$( get_file_separator_delimiter_line )
+	
 	assert_equals "$EXPECTED" "$OBTAINED"
+}
+
+test_remove_unwanted_lines_in_compilation() {
+	local FILE4TEST="remove_unwanted_lines_file4test.sh"	
+	local INPUT_FILE="$TMP_DIR_PATH/$FILE4TEST"
+	local OUTPUT_FILE="$TMP_DIR_PATH/output_file.sh"
+	
+	cp "$TEST_RESOURCES_DIR_PATH/$FILE4TEST" "$TMP_DIR_PATH/$FILE4TEST" 
+
+	remove_file_if_exists "$OUTPUT_FILE"  
+	
+	remove_unwanted_lines_in_compilation "$INPUT_FILE" "$OUTPUT_FILE"
+	
+	remove_file_if_exists "$INPUT_FILE"
+	
+	local CONTENT=$( grep -v -e '^$' < "$OUTPUT_FILE" ) # read all non blank lines
+	
+	assert_equals "$CONTENT" "test123" # only 1 line was read, other lines was removed
+}
+
+test_ensure_newline_at_end_of_files(){
+	local FILENAME4TEST1="file4test1_ensure_newline_at_end_of_files.sh"
+	local FILENAME4TEST2="file4test2_ensure_newline_at_end_of_files.sh"
+	
+	local FOLDERNAME4TEST="folder4test"
+	local INPUT_FOLDER="$TMP_DIR_PATH/$FOLDERNAME4TEST"
+	
+	local CONTENT
+	
+	remove_folder_if_exists "$INPUT_FOLDER" 
+	create_path_if_not_exists "$INPUT_FOLDER"
+	
+	cp "$TEST_RESOURCES_DIR_PATH/$FILENAME4TEST1" "$INPUT_FOLDER"
+	cp "$TEST_RESOURCES_DIR_PATH/$FILENAME4TEST2" "$INPUT_FOLDER" 
+
+	ensure_newline_at_end_of_files "$INPUT_FOLDER"
+	 
+	CONTENT=$( tail -n 1 "$INPUT_FOLDER/$FILENAME4TEST1" ) # read last line
+	assert_equals "$CONTENT" ""
+	
+	CONTENT=$( tail -n 1 "$INPUT_FOLDER/$FILENAME4TEST2" ) # read last line
+	assert_equals "$CONTENT" "" 
+	
+	#remove_folder_if_exists "$INPUT_FOLDER" 
 }
 
 test_run_compile_sh_project() {
