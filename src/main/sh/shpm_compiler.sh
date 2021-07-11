@@ -62,37 +62,6 @@ remove_problematic_lines_of_concat_lib_file() {
 	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" < "$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_LIBS"
 }
 
-prepare_libraries() {
-	shpm_log "- Prepare libraries:"
-	
-	local TMP_COMPILE_WORKDIR
-	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
-	
-	local TMP_COMPILE_LIBS_FOLDER_PATH
-	local TMP_COMPILE_LIBS_FOLDER_PATH
-	local TMP_LIBS_CONCAT_FILENAME
-	
-	TMP_LIBS_CONCAT_FILENAME="$1"
-	
-	TMP_COMPILE_LIBS_FOLDER_PATH="$TMP_COMPILE_WORKDIR/libs"
-	
-   	increase_g_indent
-   	
-   	create_folder_if_not_exists "$TMP_COMPILE_LIBS_FOLDER_PATH"
-   	
-   	cp "$LIB_DIR_PATH" "$TMP_COMPILE_LIBS_FOLDER_PATH"
-	
-	ensure_newline_at_end_of_files "$TMP_COMPILE_LIBS_FOLDER_PATH"
-   		                     
-	concat_all_files_of_folder "$TMP_COMPILE_LIBS_FOLDER_PATH" "LIBRARIES" "$TMP_LIBS_CONCAT_FILENAME""_tmp"
-	
-	remove_unwanted_lines_in_compilation "$TMP_LIBS_CONCAT_FILENAME""_tmp" "$TMP_LIBS_CONCAT_FILENAME"
-		
-	remove_file_if_exists "$TMP_LIBS_CONCAT_FILENAME""_tmp"
-		
-   	decrease_g_indent
-}
-
 display_running_compiler_msg() {	
 	shpm_log "\nRunning compile pipeline:\n"
 }
@@ -104,6 +73,8 @@ concat_all_files_of_folder() {
 	local P_FOLDER
 	local SEPARATOR_DESCRIPTION
 	local OUTPUT_CONCAT_FILE
+	local SEPARATOR_DESCRIPTION
+	local AUX_FILEPATH
 	
 	local FILES_TO_CONCAT
 	
@@ -112,47 +83,38 @@ concat_all_files_of_folder() {
 	OUTPUT_CONCAT_FILE="$3"
 	
 	FILES_TO_CONCAT=$( find "$P_FOLDER"  -type f ! -name "$DEPENDENCIES_FILENAME" ! -name 'sh-pm*' -name '*.sh' )
-	
-	update_section_separator "LIBRARIES"	
-	cat "$FILE_WITH_SEPARATOR" >> "$OUTPUT_CONCAT_FILE"
+
+	AUX_FILEPATH="$TMP_DIR_PATH/tmp_separator_aux_file"
 	
 	for file in "${FILES_TO_CONCAT[@]}"; do
-	
-		update_file_separator "$file"
+		SEPARATOR_DESCRIPTION=$( basename "$file" )
 		
-		cat "$FILE_WITH_SEPARATOR" "$file" >> "$OUTPUT_CONCAT_FILE"
+		create_tmp_file_to_store_file_separator "$SEPARATOR_DESCRIPTION" "$AUX_FILEPATH"
+		
+		cat "$AUX_FILEPATH" "$file" >> "$OUTPUT_CONCAT_FILE"
 	done
 }
 
-update_section_separator() {
-	local STR_AUX
+create_tmp_file_to_store_section_separator() {
+	local SEPARATOR_DESCRIPTION
 	local FILECONTENT_SEP
+	local PATH_TO_TMP_FILE_STORE_SEPARATOR
 	
-	STR_AUX="$1"
+	SEPARATOR_DESCRIPTION="$1"
+	PATH_TO_TMP_FILE_STORE_SEPARATOR="$2"
+	
 	FILECONTENT_SEP=$( right_pad_string "#" 140 ">" )
 	
-	echo -e "\n\n$FILECONTENT_SEP\n# $STR_AUX \n$FILECONTENT_SEP\n\n" > "$FILE_WITH_SEPARATOR"
+	echo -e "\n$FILECONTENT_SEP\n# $SEPARATOR_DESCRIPTION\n$FILECONTENT_SEP\n" > "$PATH_TO_TMP_FILE_STORE_SEPARATOR"
 }
 
-create_file_separator() {
-	local file="$1"
-	local PATH_TO_FILE_CONTAINING_SEPARATOR="$2"
+create_tmp_file_to_store_file_separator() {
+	local SEPARATOR_DESCRIPTION="$1"
+	local PATH_TO_TMP_FILE_STORE_SEPARATOR="$2"
 
-	FILENAME_AUX=$( basename "$file" )
-			
 	FILECONTENT_SEP=$( right_pad_string "" 110 "#" )
 	 		
-	echo "#### $FILENAME_AUX ${FILECONTENT_SEP:0:-${#FILENAME_AUX}}" > "$PATH_TO_FILE_CONTAINING_SEPARATOR"
-}
-
-update_file_separator() {
-	local file="$1"
-
-	FILENAME_AUX=$( basename "$file" )
-			
-	FILECONTENT_SEP=$( right_pad_string "" 110 "#" )
-	 		
-	echo "#### $FILENAME_AUX ${FILECONTENT_SEP:0:-${#FILENAME_AUX}}" > "$FILE_WITH_SEPARATOR"
+	echo "#### $SEPARATOR_DESCRIPTION ${FILECONTENT_SEP:0:-${#SEPARATOR_DESCRIPTION}}" > "$PATH_TO_TMP_FILE_STORE_SEPARATOR"
 }
 
 concat_all_src_files(){
@@ -188,23 +150,6 @@ get_entrypoint_filepath(){
 	done
 }
 
-
-remove_problematic_lines_of_src_concat_file() {
-	shpm_log "- Remove problematic lines in all .sh src files ..."
-	remove_unwanted_lines_in_compilation "$FILE_WITH_CAT_SH_SRCS""_tmp" "$FILE_WITH_CAT_SH_SRCS"
-	remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS""_tmp"
-}
-
-remove_problematic_lines_of_entryfile() {
-	HANDLED_FILE_ENTRYPOINT_PATH=$( get_handled_fileentrypoint_path )
-	shpm_log "- Remove problematic lines in $HANDLED_FILE_ENTRYPOINT_PATH files ..."
-	
-	cp "$HANDLED_FILE_ENTRYPOINT_PATH" "$HANDLED_FILE_ENTRYPOINT_PATH""_tmp"
-	
-	remove_unwanted_lines_in_compilation "$HANDLED_FILE_ENTRYPOINT_PATH""_tmp" "$HANDLED_FILE_ENTRYPOINT_PATH"
-	
-	remove_file_if_exists "$HANDLED_FILE_ENTRYPOINT_PATH""_tmp"
-}
 
 remove_unwanted_lines_of_files() {
 	local P_FOLDER
@@ -253,31 +198,137 @@ remove_unwanted_lines_in_compilation() {
 	> "$OUTPUT_FILE"
 }
 
-prepare_source_code() {
-   	shpm_log "- Prepare source code:"
+prepare_libraries() {
+	shpm_log "- Prepare libraries:"
+	
+	local TMP_COMPILE_WORKDIR	
+	local TMP_COMPILE_LIBS_FOLDER_PATH
+	local TMP_LIBS_CONCAT_FILENAME
+	local FOLDER_PATH
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	FOLDER_PATH="$1"
+	TMP_LIBS_CONCAT_FILENAME="$2"
+	TMP_COMPILE_LIBS_FOLDER_PATH="$TMP_COMPILE_WORKDIR/libs"
+	
    	increase_g_indent
    	
- 	ensure_newline_at_end_of_src_files
+   	create_path_if_not_exists "$TMP_COMPILE_LIBS_FOLDER_PATH"
+   	
+   	cp -r "$FOLDER_PATH" "$TMP_COMPILE_LIBS_FOLDER_PATH"
 	
-	concat_all_src_files
+	ensure_newline_at_end_of_files "$TMP_COMPILE_LIBS_FOLDER_PATH"
+   		                     
+	concat_all_files_of_folder "$TMP_COMPILE_LIBS_FOLDER_PATH" "LIBRARIES" "$TMP_LIBS_CONCAT_FILENAME""_tmp"
 	
-	remove_problematic_lines_of_src_concat_file
+	remove_unwanted_lines_in_compilation "$TMP_LIBS_CONCAT_FILENAME""_tmp" "$TMP_LIBS_CONCAT_FILENAME"
 
-	shpm_log "- Remove problematic lines in $ROOT_DIR_PATH/$BOOTSTRAP_FILENAME file ..."
-	grep -v "$SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE" < "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" | grep -v "$SHEBANG_FIRST_LINE" > "$FILE_WITH_BOOTSTRAP_SANITIZED"  
+	remove_file_if_exists "$TMP_LIBS_CONCAT_FILENAME""_tmp"
+	
+	add_section_delimiter_at_start_of_file "LIBRARIES" "$TMP_SRCS_CONCAT_FILEPATH"
+	
+   	decrease_g_indent
+}
+
+prepare_source_code() {
+	shpm_log "- Prepare source code:"
+	
+	local TMP_COMPILE_WORKDIR
+	local TMP_COMPILE_SRCS_FOLDER_PATH
+	local TMP_SRCS_CONCAT_FILENAME
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	
+	FOLDER_PATH="$1"
+	TMP_SRCS_CONCAT_FILEPATH="$2"
+	TMP_COMPILE_SRCS_FOLDER_PATH="$TMP_COMPILE_WORKDIR/srcs"
+	
+   	increase_g_indent
+   	
+   	create_path_if_not_exists "$TMP_COMPILE_SRCS_FOLDER_PATH"
+   	
+   	cp "$FOLDER_PATH" "$TMP_COMPILE_SRCS_FOLDER_PATH"
+	
+	ensure_newline_at_end_of_files "$TMP_COMPILE_SRCS_FOLDER_PATH"
+   		                     
+	concat_all_files_of_folder "$TMP_COMPILE_SRCS_FOLDER_PATH" "SOURCES" "$TMP_SRCS_CONCAT_FILEPATH""_tmp"
+	
+	remove_unwanted_lines_in_compilation "$TMP_SRCS_CONCAT_FILEPATH""_tmp" "$TMP_SRCS_CONCAT_FILEPATH"
+	
+	add_section_delimiter_at_start_of_file "SOURCES" "$TMP_SRCS_CONCAT_FILEPATH"
+	
+	remove_file_if_exists "$TMP_SRCS_CONCAT_FILEPATH""_tmp"
+		
    	decrease_g_indent
 }
 
 prepare_dep_file() {
-	ensure_newline_at_end_of_dep_file
-	local DEP_FILE_PATH="$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME";
-	create_file_separator "$DEP_FILE_PATH" "$FILE_WITH_SEPARATOR""_dep"
+	shpm_log "- Prepare $DEPENDENCIES_FILENAME:"
+	
+	local DEP_FILE_PATH
+	local OUTPUT_FILE_PATH
+	local TMP_COMPILE_WORKDIR
+	
+	DEP_FILE_PATH="$1";
+	OUTPUT_FILE_PATH="$1";
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	
+	increase_g_indent
+   	
+   	create_path_if_not_exists "$TMP_COMPILE_WORKDIR"
+   	
+   	cp "$DEP_FILE_PATH" "$OUTPUT_FILE_PATH"
+   	
+   	ensure_newline_at_end_of_file "$OUTPUT_FILE_PATH"
+	
+	add_section_delimiter_at_start_of_file "$DEPENDENCIES_FILENAME" "$OUTPUT_FILE_PATH"
+	
+	decrease_g_indent
 }
 
 prepare_bootstrap_file() {
-	ensure_newline_at_end_of_bootstrap_file
-	local BOOTSTRAP_FILE_PATH="$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME";
-	create_file_separator "$BOOTSTRAP_FILE_PATH" "$FILE_WITH_SEPARATOR""_bootstrap"
+	shpm_log "- Prepare $BOOTSTRAP_FILENAME:"
+	
+	local DEP_FILE_PATH
+	local OUTPUT_FILE_PATH
+	local TMP_COMPILE_WORKDIR
+	
+	DEP_FILE_PATH="$1";
+	OUTPUT_FILE_PATH="$1";
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	
+	increase_g_indent
+   	
+   	create_path_if_not_exists "$TMP_COMPILE_WORKDIR"
+   	
+   	cp "$DEP_FILE_PATH" "$OUTPUT_FILE_PATH"
+   	
+   	ensure_newline_at_end_of_file "$OUTPUT_FILE_PATH"
+	
+	add_section_delimiter_at_start_of_file "$BOOTSTRAP_FILENAME" "$OUTPUT_FILE_PATH"
+	
+	decrease_g_indent
+}
+
+add_section_delimiter_at_start_of_file() {
+	local SECTION_DESCRIPTION
+	local FILE_PATH
+	local AUX_FILE_WITH_SEP
+	
+	SECTION_DESCRIPTION="$1"
+	FILE_PATH="$2"
+	
+	AUX_FILE_WITH_SEP="$TMP_DIR_PATH/tmp_file_store_separator"
+	
+	create_tmp_file_to_store_section_separator "$SECTION_DESCRIPTION" "$AUX_FILE_WITH_SEP"
+	
+	cp "$FILE_PATH" "$FILE_PATH""_addsectiontmp"
+	
+	cat "$AUX_FILE_WITH_SEP" "$FILE_PATH""_addsectiontmp" > "$FILE_PATH"
+	
+	remove_file_if_exists "$FILE_PATH""_addsectiontmp" 
 }
 
 get_handled_fileentrypoint_path() {
@@ -310,26 +361,6 @@ ensure_newline_at_end_of_files() {
 	for file in $(find "$FOLDER_PATH" -type f ! -name "$DEPENDENCIES_FILENAME" ! -name 'sh-pm*' -name '*.sh'); do
 		ensure_newline_at_end_of_file "$file"
 	done
-}
-
-ensure_newline_at_end_of_lib_files() {
-	shpm_log "- Ensure \\\n in end of lib files to prevent file concatenation errors ..."
-	ensure_newline_at_end_of_files "$LIB_DIR_PATH"
-}
-
-ensure_newline_at_end_of_src_files() {
-  	shpm_log "- Ensure \\\n in end of src files to prevent file concatenation errors ..."
-	ensure_newline_at_end_of_files "$SRC_DIR_PATH"
-}
-
-ensure_newline_at_end_of_dep_file() {
-  	shpm_log "- Ensure \\\n in end of $DEPENDENCIES_FILENAME to prevent file concatenation errors ..."
-	ensure_newline_at_end_of_file "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"
-}
-
-ensure_newline_at_end_of_bootstrap_file() {
-  	shpm_log "- Ensure \\\n in end of $BOOTSTRAP_FILENAME to prevent file concatenation errors ..."
-  	ensure_newline_at_end_of_file "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME"
 }
 
 ensure_newline_at_end_of_file() {
@@ -377,7 +408,8 @@ run_compile_app() {
 	FILE_WITH_CAT_SH_LIBS="$TMP_COMPILE_WORKDIR/lib_files_concat"
 	FILE_WITH_CAT_SH_SRCS="$TMP_COMPILE_WORKDIR/sh_files_concat"
 	FILE_WITH_SEPARATOR="$TMP_COMPILE_WORKDIR/separator"
-	FILE_WITH_BOOTSTRAP_SANITIZED="$$TMP_COMPILE_WORKDIR/$BOOTSTRAP_FILENAME"
+	FILE_WITH_BOOTSTRAP_SANITIZED="$TMP_COMPILE_WORKDIR/$BOOTSTRAP_FILENAME"
+	FILE_WITH_DEPS_SANITIZED="$TMP_COMPILE_WORKDIR/$DEPENDENCIES_FILENAME"
 	
 	display_running_compiler_msg
 	
@@ -385,16 +417,17 @@ run_compile_app() {
    	
    	reset_tmp_compilation_dir
 
-   	prepare_libraries "$FILE_WITH_CAT_SH_LIBS"
+   	prepare_libraries "$LIB_DIR_PATH" "$FILE_WITH_CAT_SH_LIBS"
 
-	prepare_source_code "$FILE_WITH_CAT_SH_SRCS"
+	prepare_source_code "$SRC_DIR_PATH" "$FILE_WITH_CAT_SH_SRCS"
 
-	prepare_dep_file
+	prepare_dep_file "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME" "$FILE_WITH_DEPS_SANITIZED"
 	
-	prepare_bootstrap_file
+	prepare_bootstrap_file "$FILE_WITH_BOOTSTRAP_SANITIZED"
 		
 	prepare_fileentrypoint
-	HANDLED_FILE_ENTRYPOINT_PATH=$( get_handled_fileentrypoint_path "$FILE_ENTRY_POINT_PATH" )
+	
+	HANDLED_FILE_ENTRYPOINT_PATH=$( get_handled_fileentrypoint_path "$FILE_ENTRYPOINT_PATH" )
 
 	shpm_log "- Generate compiled file ..."
 	

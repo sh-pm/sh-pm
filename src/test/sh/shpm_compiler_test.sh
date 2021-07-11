@@ -163,7 +163,90 @@ test_ensure_newline_at_end_of_files(){
 	#remove_folder_if_exists "$INPUT_FOLDER" 
 }
 
-test_run_compile_sh_project() {
+test_prepare_libraries() {
+	local TMP_COMPILE_WORKDIR
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	FILE_WITH_CAT_SH_LIBS="$TMP_COMPILE_WORKDIR/lib_files_concat"
+	
+	prepare_libraries "$LIB_DIR_PATH" "$FILE_WITH_CAT_SH_LIBS"
+	
+	if [[ ! -d "$TMP_COMPILE_WORKDIR" ]]; then
+	  assert_fail "Folder $TMP_COMPILE_WORKDIR not found."
+	fi
+	
+	if [[ ! -f "$FILE_WITH_CAT_SH_LIBS" ]]; then
+	  assert_fail "File $FILE_WITH_CAT_SH_LIBS not found."
+	fi
+}
+
+test_create_tmp_file_to_store_file_separator() {
+	local DESCRIPTION="aux4test"
+	local PATH_TO_TMP_FILE_STORE_SEPARATOR="/tmp/aux4test.sh"
+	
+	local EXPECTED="#### aux4test ######################################################################################################"
+	local OBTAINED
+	
+	remove_file_if_exists "$PATH_TO_TMP_FILE_STORE_SEPARATOR"
+	
+	create_tmp_file_to_store_file_separator "$DESCRIPTION" "$PATH_TO_TMP_FILE_STORE_SEPARATOR"
+	
+	OBTAINED=$( cat "$PATH_TO_TMP_FILE_STORE_SEPARATOR" )
+	
+	assert_equals "$EXPECTED" "$OBTAINED"
+	
+	remove_file_if_exists "$PATH_TO_TMP_FILE_STORE_SEPARATOR"
+}
+
+test_create_tmp_file_to_store_section_separator() {
+	local DESCRIPTION="aux4test"
+	local PATH_TO_TMP_FILE_STORE_SEPARATOR="/tmp/aux4test.sh"
+	
+	local EXPECTED=$( echo -e "\n#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n# aux4test\n#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n" )
+	local OBTAINED
+	
+	remove_file_if_exists "$PATH_TO_TMP_FILE_STORE_SEPARATOR"
+	
+	create_tmp_file_to_store_section_separator "$DESCRIPTION" "$PATH_TO_TMP_FILE_STORE_SEPARATOR"
+	
+	OBTAINED=$( cat "$PATH_TO_TMP_FILE_STORE_SEPARATOR" )
+	
+	assert_equals "$EXPECTED" "$OBTAINED"
+	
+	remove_file_if_exists "$PATH_TO_TMP_FILE_STORE_SEPARATOR"
+}
+
+test_add_section_delimiter_at_start_of_file() {
+	local SECTION_DESCRIPTION="aux4test"
+	local FILE_PATH="/tmp/test.sh"
+	
+	local INITIAL_FILE_CONTENT
+	local SECTION_DELIMITER
+	
+	remove_file_if_exists "$FILE_PATH"
+	
+	INITIAL_FILE_CONTENT="test123"
+	
+	echo -e "$INITIAL_FILE_CONTENT" > "$FILE_PATH"
+	
+	OBTAINED=$( cat "$FILE_PATH" )
+	assert_equals "$INITIAL_FILE_CONTENT" "$OBTAINED"
+	
+	SECTION_DELIMITER=$( echo -e "\n#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n# aux4test\n#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n" )
+	
+	local EXPECTED="$SECTION_DELIMITER\n\n$INITIAL_FILE_CONTENT"
+	local OBTAINED
+	
+	add_section_delimiter_at_start_of_file "$SECTION_DESCRIPTION" "$FILE_PATH"
+
+	OBTAINED=$( cat "$FILE_PATH" )
+	
+	assert_equals "$EXPECTED" "$OBTAINED"
+	
+	remove_file_if_exists "$FILE_PATH"
+}
+
+test_run_compile_app() {
 	local REPOSITORY
 	local DEP_ARTIFACT_ID
 	local DEP_VERSION
