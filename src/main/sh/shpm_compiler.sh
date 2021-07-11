@@ -313,6 +313,9 @@ prepare_bootstrap_file() {
 }
 
 add_section_delimiter_at_start_of_file() {
+
+	shpm_log "- Add section delimiter ..."
+
 	local SECTION_DESCRIPTION
 	local FILE_PATH
 	local AUX_FILE_WITH_SEP
