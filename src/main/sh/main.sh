@@ -72,7 +72,6 @@ run_sh_pm() {
 			fi
 			
 			if [[ "$ARG" == "test" ]];  then
-				TEST="true"				
 				shift # this discard 1st param and do $@ consider params from 2nd param to end
 				run_testcases "$@" 				
 			fi
@@ -85,18 +84,17 @@ run_sh_pm() {
 				i=$((i+1))
 				SKIP_SHELLCHECK="${!i:-false}"
 				
-				run_compile_app
+				run_compile_app "$SKIP_SHELLCHECK"
 			fi
 			
 			if [[ "$ARG" == "compile_lib" ]];  then				
 				i=$((i+1))
 				SKIP_SHELLCHECK="${!i:-false}"
 				
-				run_compile_lib
+				run_compile_lib "$SKIP_SHELLCHECK"
 			fi
 		
 			if [[ "$ARG" == "package" ]];  then
-				PACKAGE="true"
 				i=$((i+1))
 				SKIP_SHELLCHECK="${!i:-false}"
 				
@@ -104,7 +102,6 @@ run_sh_pm() {
 			fi
 			
 			if [[ "$ARG" == "publish" ]];  then
-				PUBLISH="true"
 				i=$((i+1))
 				SKIP_SHELLCHECK="${!i:-false}"
 				

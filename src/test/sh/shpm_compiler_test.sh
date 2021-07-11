@@ -113,7 +113,7 @@ test_get_file_separator_delimiter_line() {
 	local EXPECTED
 	local OBTAINED
 	
-	EXPECTED="\n###################################################################################################################################\n"
+	EXPECTED="#####################################################################################################################################"
 	OBTAINED=$( get_file_separator_delimiter_line )
 	
 	assert_equals "$EXPECTED" "$OBTAINED"
