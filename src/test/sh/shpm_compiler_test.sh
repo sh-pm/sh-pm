@@ -160,7 +160,7 @@ test_ensure_newline_at_end_of_files(){
 	CONTENT=$( tail -n 1 "$INPUT_FOLDER/$FILENAME4TEST2" ) # read last line
 	assert_equals "$CONTENT" "" 
 	
-	#remove_folder_if_exists "$INPUT_FOLDER" 
+	remove_folder_if_exists "$INPUT_FOLDER" 
 }
 
 test_prepare_libraries() {
@@ -169,7 +169,7 @@ test_prepare_libraries() {
 	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
 	FILE_WITH_CAT_SH_LIBS="$TMP_COMPILE_WORKDIR/lib_files_concat"
 	
-	prepare_libraries "$LIB_DIR_PATH" "$FILE_WITH_CAT_SH_LIBS"
+	prepare_libraries "$TEST_RESOURCES_DIR_PATH/prepare_libs_4test" "$FILE_WITH_CAT_SH_LIBS"
 	
 	if [[ ! -d "$TMP_COMPILE_WORKDIR" ]]; then
 	  assert_fail "Folder $TMP_COMPILE_WORKDIR not found."
@@ -178,6 +178,32 @@ test_prepare_libraries() {
 	if [[ ! -f "$FILE_WITH_CAT_SH_LIBS" ]]; then
 	  assert_fail "File $FILE_WITH_CAT_SH_LIBS not found."
 	fi
+	
+	RESULT=$( diff "$FILE_WITH_CAT_SH_LIBS" "$TEST_RESOURCES_DIR_PATH/prepare_libs_expected/lib_files_concat" )
+	assert_equals "$?" "0"
+	assert_equals "$RESULT" ""
+	
+	remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
+}
+
+test_concat_all_files_of_folder() {
+	local P_FOLDER
+	local SEPARATOR_DESCRIPTION
+	local OUTPUT_CONCAT_FILE
+	
+	local EXPECTED
+	local OBTAINED
+	
+	P_FOLDER="$TEST_RESOURCES_DIR_PATH/prepare_libs_4test"
+	SEPARATOR_DESCRIPTION="TEST"
+	OUTPUT_CONCAT_FILE="/tmp/tmpfileconcat4test"
+	
+	EXPECTED=( cat "$TEST_RESOURCES_DIR_PATH/concat_file_expected4test" )
+	
+	concat_all_files_of_folder "$P_FOLDER" "$SEPARATOR_DESCRIPTION" "$OUTPUT_CONCAT_FILE"
+	OBTAINED=( cat "$OUTPUT_CONCAT_FILE" )
+	
+	assert_equals "$EXPECTED" "$OBTAINED" 
 }
 
 test_create_tmp_file_to_store_file_separator() {
@@ -217,30 +243,30 @@ test_create_tmp_file_to_store_section_separator() {
 }
 
 test_add_section_delimiter_at_start_of_file() {
-	local SECTION_DESCRIPTION="aux4test"
-	local FILE_PATH="/tmp/test.sh"
-	
+	local SECTION_DESCRIPTION
+	local FILE_PATH
 	local INITIAL_FILE_CONTENT
-	local SECTION_DELIMITER
+	local EXPECTED
+	local OBTAINED
 	
-	remove_file_if_exists "$FILE_PATH"
-	
+	SECTION_DESCRIPTION="aux4test"
+	FILE_PATH="/tmp/test.sh"
 	INITIAL_FILE_CONTENT="test123"
 	
+	# Initially file is create only containing INITIAL_FILE_CONTENT 
+	remove_file_if_exists "$FILE_PATH"	
 	echo -e "$INITIAL_FILE_CONTENT" > "$FILE_PATH"
-	
 	OBTAINED=$( cat "$FILE_PATH" )
 	assert_equals "$INITIAL_FILE_CONTENT" "$OBTAINED"
 	
-	SECTION_DELIMITER=$( echo -e "\n#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n# aux4test\n#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n" )
+	# Creating expected content
+	create_tmp_file_to_store_section_separator "$SECTION_DESCRIPTION" "/tmp/expectedcontent"
+	echo "$INITIAL_FILE_CONTENT" >> "/tmp/expectedcontent"
+	local EXPECTED=$( cat "/tmp/expectedcontent" )
 	
-	local EXPECTED="$SECTION_DELIMITER\n\n$INITIAL_FILE_CONTENT"
-	local OBTAINED
-	
+	# Test
 	add_section_delimiter_at_start_of_file "$SECTION_DESCRIPTION" "$FILE_PATH"
-
 	OBTAINED=$( cat "$FILE_PATH" )
-	
 	assert_equals "$EXPECTED" "$OBTAINED"
 	
 	remove_file_if_exists "$FILE_PATH"

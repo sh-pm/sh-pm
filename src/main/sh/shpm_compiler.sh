@@ -66,7 +66,6 @@ display_running_compiler_msg() {
 	shpm_log "\nRunning compile pipeline:\n"
 }
 
-
 concat_all_files_of_folder() {
 	shpm_log "- Concat all .sh lib files that will be used in compile ..."
 	
@@ -82,7 +81,7 @@ concat_all_files_of_folder() {
 	SEPARATOR_DESCRIPTION="$2"
 	OUTPUT_CONCAT_FILE="$3"
 	
-	FILES_TO_CONCAT=$( find "$P_FOLDER"  -type f ! -name "$DEPENDENCIES_FILENAME" ! -name 'sh-pm*' -name '*.sh' )
+	FILES_TO_CONCAT=( $( find "$P_FOLDER"  -type f ! -name "$DEPENDENCIES_FILENAME" ! -name 'sh-pm*' -name '*.sh' ) )
 
 	AUX_FILEPATH="$TMP_DIR_PATH/tmp_separator_aux_file"
 	
@@ -206,9 +205,10 @@ prepare_libraries() {
 	local TMP_LIBS_CONCAT_FILENAME
 	local FOLDER_PATH
 	
-	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
 	FOLDER_PATH="$1"
 	TMP_LIBS_CONCAT_FILENAME="$2"
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
 	TMP_COMPILE_LIBS_FOLDER_PATH="$TMP_COMPILE_WORKDIR/libs"
 	
    	increase_g_indent
