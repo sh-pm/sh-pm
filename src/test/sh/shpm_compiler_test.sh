@@ -109,16 +109,6 @@ test_left_pad_string() {
 	assert_equals "$EXPECTED" "$OBTAINED"
 }
 
-test_get_file_separator_delimiter_line() {
-	local EXPECTED
-	local OBTAINED
-	
-	EXPECTED="#####################################################################################################################################"
-	OBTAINED=$( get_file_separator_delimiter_line )
-	
-	assert_equals "$EXPECTED" "$OBTAINED"
-}
-
 test_remove_unwanted_lines_in_compilation() {
 	local FILE4TEST="remove_unwanted_lines_file4test.sh"	
 	local INPUT_FILE="$TMP_DIR_PATH/$FILE4TEST"
@@ -161,29 +151,6 @@ test_ensure_newline_at_end_of_files(){
 	assert_equals "$CONTENT" "" 
 	
 	remove_folder_if_exists "$INPUT_FOLDER" 
-}
-
-test_prepare_libraries() {
-	local TMP_COMPILE_WORKDIR
-	
-	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
-	FILE_WITH_CAT_SH_LIBS="$TMP_COMPILE_WORKDIR/lib_files_concat"
-	
-	prepare_libraries "$TEST_RESOURCES_DIR_PATH/prepare_libs_4test" "$FILE_WITH_CAT_SH_LIBS"
-	
-	if [[ ! -d "$TMP_COMPILE_WORKDIR" ]]; then
-	  assert_fail "Folder $TMP_COMPILE_WORKDIR not found."
-	fi
-	
-	if [[ ! -f "$FILE_WITH_CAT_SH_LIBS" ]]; then
-	  assert_fail "File $FILE_WITH_CAT_SH_LIBS not found."
-	fi
-	
-	RESULT=$( diff "$FILE_WITH_CAT_SH_LIBS" "$TEST_RESOURCES_DIR_PATH/prepare_libs_expected/lib_files_concat" )
-	assert_equals "$?" "0"
-	assert_equals "$RESULT" ""
-	
-	remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
 }
 
 test_concat_all_files_of_folder() {
@@ -270,6 +237,81 @@ test_add_section_delimiter_at_start_of_file() {
 	assert_equals "$EXPECTED" "$OBTAINED"
 	
 	remove_file_if_exists "$FILE_PATH"
+}
+
+test_get_entrypoint_filepath() {
+	local EXPECTED
+	local OBTAINED
+	
+	EXPECTED="$SRC_DIR_PATH/main.sh"
+	OBTAINED=$( get_entrypoint_filepath )
+	
+	assert_equals "$EXPECTED" "$OBTAINED"
+}
+
+test_get_tmp_compilation_dir() {
+	local OBTAINED
+	
+	OBTAINED=$( get_tmp_compilation_dir )
+	
+	assert_start_with "$OBTAINED" "$TMP_DIR_PATH/compilation_"
+}
+
+test_reset_tmp_compilation_dir() {
+	cd "$TMP_DIR_PATH"
+	rm -rf "compilation_"*
+	
+	reset_tmp_compilation_dir
+	
+	FOLDERS_FOUND=( $( find "$TMP_DIR_PATH" -name "compilation_"* )  )
+	
+	assert_equals "1" "${#FOLDERS_FOUND[@]}"
+}
+
+test_prepare_libraries() {
+	local TMP_COMPILE_WORKDIR
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	FILE_WITH_CAT_SH_LIBS="$TMP_COMPILE_WORKDIR/lib_files_concat"
+	
+	prepare_libraries "$TEST_RESOURCES_DIR_PATH/prepare_libs_4test" "$FILE_WITH_CAT_SH_LIBS"
+	
+	if [[ ! -d "$TMP_COMPILE_WORKDIR" ]]; then
+	  assert_fail "Folder $TMP_COMPILE_WORKDIR not found."
+	fi
+	
+	if [[ ! -f "$FILE_WITH_CAT_SH_LIBS" ]]; then
+	  assert_fail "File $FILE_WITH_CAT_SH_LIBS not found."
+	fi
+	
+	RESULT=$( diff "$FILE_WITH_CAT_SH_LIBS" "$TEST_RESOURCES_DIR_PATH/prepare_libs_expected/lib_files_concat" )
+	assert_equals "$?" "0"
+	assert_equals "$RESULT" ""
+	
+	remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
+}
+
+test_prepare_source_code() {
+	local TMP_COMPILE_WORKDIR
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	FILE_WITH_CAT_SH_SRCS="$TMP_COMPILE_WORKDIR/src_files_concat"
+	
+	prepare_source_code "$TEST_RESOURCES_DIR_PATH/prepare_srcs_4test" "$FILE_WITH_CAT_SH_SRCS"
+	
+	if [[ ! -d "$TMP_COMPILE_WORKDIR" ]]; then
+	  assert_fail "Folder $TMP_COMPILE_WORKDIR not found."
+	fi
+	
+	if [[ ! -f "$FILE_WITH_CAT_SH_SRCS" ]]; then
+	  assert_fail "File $FILE_WITH_CAT_SH_SRCS not found."
+	fi
+	
+	RESULT=$( diff "$FILE_WITH_CAT_SH_SRCS" "$TEST_RESOURCES_DIR_PATH/prepare_srcs_expected/src_files_concat" )
+	assert_equals "$?" "0"
+	assert_equals "$RESULT" ""
+	
+	#remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
 }
 
 test_run_compile_app() {

@@ -53,15 +53,6 @@ display_file_entrypoint_error_message() {
 	shpm_log ""
 }
 
-get_file_separator_delimiter_line() {
-	right_pad_string "" 133 "#"
-}
-
-remove_problematic_lines_of_concat_lib_file() {
-	shpm_log "- Remove problematic lines in all .sh lib files ..."
-	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" < "$FILE_WITH_CAT_SH_LIBS""_tmp" | grep -v "$SHEBANG_FIRST_LINE" | grep -v "$INCLUDE_LIB_AND_FILE" > "$FILE_WITH_CAT_SH_LIBS"
-}
-
 display_running_compiler_msg() {	
 	shpm_log "\nRunning compile pipeline:\n"
 }
@@ -116,47 +107,17 @@ create_tmp_file_to_store_file_separator() {
 	echo "#### $SEPARATOR_DESCRIPTION ${FILECONTENT_SEP:0:-${#SEPARATOR_DESCRIPTION}}" > "$PATH_TO_TMP_FILE_STORE_SEPARATOR"
 }
 
-concat_all_src_files(){
-	shpm_log "- Concat all .sh src files that will be used in compile except entrypoint file ..."
-		
-	local SRC_FILES
-	local FILE_ENTRYPOINT_PATH
-	
-	SRC_FILES=$( find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "pom.sh" -name '*.sh' )
-	FILE_ENTRYPOINT_PATH=""
-	
-	update_section_separator "SOURCES"	
-	
-	cat "$FILE_WITH_SEPARATOR" >> "$FILE_WITH_CAT_SH_SRCS""_tmp"
-	
-	for file in "${SRC_FILES[@]}"; do
-		if [[ "$FILE_ENTRYPOINT_NAME" != "$( basename "$file" )" ]]; then
-			update_file_separator "$file"
-			cat "$FILE_WITH_SEPARATOR" "$file" >> "$FILE_WITH_CAT_SH_SRCS""_tmp"
-		fi 		
-	done
-}
-
 get_entrypoint_filepath(){
 	local SRC_FILES
+	local FILE_ENTRYPOINT_NAME
 	
-	SRC_FILES=$( find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "pom.sh" -name '*.sh' )
+	FILE_ENTRYPOINT_NAME=$( get_entrypoint_filename )
+	SRC_FILES=( $( find "$SRC_DIR_PATH"  -type f ! -path "sh-pm*" ! -name "pom.sh" -name '*.sh' ) )
 	
 	for file in "${SRC_FILES[@]}"; do
 		if [[ "$FILE_ENTRYPOINT_NAME" == "$( basename "$file" )" ]]; then
 			echo "$file"
 		fi	
-	done
-}
-
-
-remove_unwanted_lines_of_files() {
-	local P_FOLDER
-	
-	P_FOLDER="$1"
-
-	for file in $(find "$P_FOLDER" -type f ); do
-		remove_unwanted_lines_in_compilation "$file" "$file"
 	done
 }
 
@@ -236,11 +197,12 @@ prepare_source_code() {
 	local TMP_COMPILE_WORKDIR
 	local TMP_COMPILE_SRCS_FOLDER_PATH
 	local TMP_SRCS_CONCAT_FILENAME
-	
-	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	local FOLDER_PATH
 	
 	FOLDER_PATH="$1"
 	TMP_SRCS_CONCAT_FILEPATH="$2"
+
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
 	TMP_COMPILE_SRCS_FOLDER_PATH="$TMP_COMPILE_WORKDIR/srcs"
 	
    	increase_g_indent
@@ -255,9 +217,9 @@ prepare_source_code() {
 	
 	remove_unwanted_lines_in_compilation "$TMP_SRCS_CONCAT_FILEPATH""_tmp" "$TMP_SRCS_CONCAT_FILEPATH"
 	
-	add_section_delimiter_at_start_of_file "SOURCES" "$TMP_SRCS_CONCAT_FILEPATH"
-	
 	remove_file_if_exists "$TMP_SRCS_CONCAT_FILEPATH""_tmp"
+
+	add_section_delimiter_at_start_of_file "SOURCES" "$TMP_SRCS_CONCAT_FILEPATH"
 		
    	decrease_g_indent
 }
@@ -290,11 +252,11 @@ prepare_dep_file() {
 prepare_bootstrap_file() {
 	shpm_log "- Prepare $BOOTSTRAP_FILENAME:"
 	
-	local DEP_FILE_PATH
+	local BOOTSTRAP_FILE_PATH
 	local OUTPUT_FILE_PATH
 	local TMP_COMPILE_WORKDIR
 	
-	DEP_FILE_PATH="$1";
+	BOOTSTRAP_FILE_PATH="$1";
 	OUTPUT_FILE_PATH="$1";
 	
 	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
@@ -303,7 +265,7 @@ prepare_bootstrap_file() {
    	
    	create_path_if_not_exists "$TMP_COMPILE_WORKDIR"
    	
-   	cp "$DEP_FILE_PATH" "$OUTPUT_FILE_PATH"
+   	cp "$BOOTSTRAP_FILE_PATH" "$OUTPUT_FILE_PATH"
    	
    	ensure_newline_at_end_of_file "$OUTPUT_FILE_PATH"
 	
