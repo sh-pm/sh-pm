@@ -77,6 +77,7 @@ concat_all_files_of_folder() {
 	AUX_FILEPATH="$TMP_DIR_PATH/tmp_separator_aux_file"
 	
 	for file in "${FILES_TO_CONCAT[@]}"; do
+		
 		SEPARATOR_DESCRIPTION=$( basename "$file" )
 		
 		create_tmp_file_to_store_file_separator "$SEPARATOR_DESCRIPTION" "$AUX_FILEPATH"
@@ -209,7 +210,7 @@ prepare_source_code() {
    	
    	create_path_if_not_exists "$TMP_COMPILE_SRCS_FOLDER_PATH"
    	
-   	cp "$FOLDER_PATH" "$TMP_COMPILE_SRCS_FOLDER_PATH"
+   	cp -R "$FOLDER_PATH" "$TMP_COMPILE_SRCS_FOLDER_PATH"
 	
 	ensure_newline_at_end_of_files "$TMP_COMPILE_SRCS_FOLDER_PATH"
    		                     

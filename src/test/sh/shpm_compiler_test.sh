@@ -311,10 +311,10 @@ test_prepare_source_code() {
 	assert_equals "$?" "0"
 	assert_equals "$RESULT" ""
 	
-	#remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
+	remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
 }
 
-test_run_compile_app() {
+__test_run_compile_app() {
 	local REPOSITORY
 	local DEP_ARTIFACT_ID
 	local DEP_VERSION
