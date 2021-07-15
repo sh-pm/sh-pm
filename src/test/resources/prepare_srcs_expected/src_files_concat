@@ -1,0 +1,62 @@
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# SOURCES
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+#### src_file_4test4.sh ############################################################################################
+
+
+
+create_path_if_not_exists3() {
+	local PATH_TARGET
+	PATH_TARGET="$1"
+	
+	if [[ -z "$PATH_TARGET" ]]; then
+		shpm_log "${FUNCNAME[0]} run with empty param: |$PATH_TARGET|"
+		return 1
+	fi 
+
+	if [[ ! -d "$PATH_TARGET" ]]; then
+	   shpm_log "- Creating $PATH_TARGET ..."
+	   mkdir -p "$PATH_TARGET"
+	fi
+}
+
+#### src_file_4test1.sh ############################################################################################
+
+
+
+create_path_if_not_exists() {
+	local PATH_TARGET
+	PATH_TARGET="$1"
+	
+	if [[ -z "$PATH_TARGET" ]]; then
+		shpm_log "${FUNCNAME[0]} run with empty param: |$PATH_TARGET|"
+		return 1
+	fi 
+
+	if [[ ! -d "$PATH_TARGET" ]]; then
+	   shpm_log "- Creating $PATH_TARGET ..."
+	   mkdir -p "$PATH_TARGET"
+	fi
+}
+
+#### src_file_4test2.sh ############################################################################################
+
+
+
+create_path_if_not_exists2() {
+	local PATH_TARGET
+	PATH_TARGET="$1"
+	
+	if [[ -z "$PATH_TARGET" ]]; then
+		shpm_log "${FUNCNAME[0]} run with empty param: |$PATH_TARGET|"
+		return 1
+	fi 
+
+	if [[ ! -d "$PATH_TARGET" ]]; then
+	   shpm_log "- Creating $PATH_TARGET ..."
+	   mkdir -p "$PATH_TARGET"
+	fi
+}
+
