@@ -168,7 +168,7 @@ prepare_libraries() {
 	local FOLDER_PATH
 	
 	FOLDER_PATH="$1"
-	TMP_LIBS_CONCAT_FILENAME="$2"
+	TMP_LIBS_CONCAT_FILEPATH="$2"
 	
 	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
 	TMP_COMPILE_LIBS_FOLDER_PATH="$TMP_COMPILE_WORKDIR/libs"
@@ -181,13 +181,13 @@ prepare_libraries() {
 	
 	ensure_newline_at_end_of_files "$TMP_COMPILE_LIBS_FOLDER_PATH"
    		                     
-	concat_all_files_of_folder "$TMP_COMPILE_LIBS_FOLDER_PATH" "LIBRARIES" "$TMP_LIBS_CONCAT_FILENAME""_tmp"
+	concat_all_files_of_folder "$TMP_COMPILE_LIBS_FOLDER_PATH" "LIBRARIES" "$TMP_LIBS_CONCAT_FILEPATH""_tmp"
 	
-	remove_unwanted_lines_in_compilation "$TMP_LIBS_CONCAT_FILENAME""_tmp" "$TMP_LIBS_CONCAT_FILENAME"
+	remove_unwanted_lines_in_compilation "$TMP_LIBS_CONCAT_FILEPATH""_tmp" "$TMP_LIBS_CONCAT_FILEPATH"
 
-	remove_file_if_exists "$TMP_LIBS_CONCAT_FILENAME""_tmp"
+	remove_file_if_exists "$TMP_LIBS_CONCAT_FILEPATH""_tmp"
 	
-	add_section_delimiter_at_start_of_file "LIBRARIES" "$TMP_SRCS_CONCAT_FILEPATH"
+	add_section_delimiter_at_start_of_file "LIBRARIES" "$TMP_LIBS_CONCAT_FILEPATH"
 	
    	decrease_g_indent
 }
@@ -408,10 +408,9 @@ run_compile_app() {
 
 	prepare_dep_file "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME" "$FILE_WITH_DEPS_SANITIZED"
 	
-	prepare_bootstrap_file "$FILE_WITH_BOOTSTRAP_SANITIZED"
+	prepare_bootstrap_file "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" "$FILE_WITH_BOOTSTRAP_SANITIZED"
 	
-	HANDLED_FILE_ENTRYPOINT_PATH=$( get_handled_fileentrypoint_path "$( basename "$FILE_ENTRYPOINT_PATH" )""/""$( get_compiled_filename )" )
-	prepare_fileentrypoint "$HANDLED_FILE_ENTRYPOINT_PATH" "$FILEENTRYPOINT_SANITIZED"
+	prepare_fileentrypoint "$( get_entrypoint_filepath )" "$FILEENTRYPOINT_SANITIZED"
 	
 	shpm_log "- Generate compiled file ..."
 	
@@ -421,11 +420,11 @@ run_compile_app() {
 	COMPILED_FILE_PATH="$TARGET_DIR_PATH/$COMPILED_FILE_NAME"
 	
 	cat \
-		"$FILE_WITH_SEPARATOR""_dep" "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"  \
-		"$FILE_WITH_SEPARATOR""_bootstrap" "$FILE_WITH_BOOTSTRAP_SANITIZED" \
-		"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_LIBS" \
-		"$FILE_WITH_SEPARATOR" "$FILE_WITH_CAT_SH_SRCS" \
-		"$FILE_WITH_SEPARATOR""_entrypoint" "$HANDLED_FILE_ENTRYPOINT_PATH" \
+		"$FILE_WITH_DEPS_SANITIZED"  \
+		"$FILE_WITH_BOOTSTRAP_SANITIZED" \
+		"$FILE_WITH_CAT_SH_LIBS" \
+		"$FILE_WITH_CAT_SH_SRCS" \
+		"$FILEENTRYPOINT_SANITIZED" \
 			> "$COMPILED_FILE_PATH"
 	
 	shpm_log "- Remove extra lines ..."
@@ -433,9 +432,9 @@ run_compile_app() {
 	
 	shpm_log "- Remove tmp files ..."
 	increase_g_indent
-	#remove_file_if_exists "$FILE_WITH_CAT_SH_LIBS"
-	#remove_file_if_exists "$FILE_WITH_CAT_SH_SRCS"
-	#remove_file_if_exists "$FILE_WITH_BOOTSTRAP_SANITIZED"
+	
+	#remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
+	
 	decrease_g_indent
 	
 	shpm_log "- Grant permissions in compiled file ..."
