@@ -233,20 +233,20 @@ prepare_dep_file() {
 	local TMP_COMPILE_WORKDIR
 	
 	DEP_FILE_PATH="$1";
-	OUTPUT_FILE_PATH="$1";
+	OUTPUT_FILE_PATH="$2";
 	
 	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
 	
 	increase_g_indent
    	
    	create_path_if_not_exists "$TMP_COMPILE_WORKDIR"
-   	
+   	   	
    	cp "$DEP_FILE_PATH" "$OUTPUT_FILE_PATH"
    	
    	ensure_newline_at_end_of_file "$OUTPUT_FILE_PATH"
 	
 	add_section_delimiter_at_start_of_file "$DEPENDENCIES_FILENAME" "$OUTPUT_FILE_PATH"
-	
+	 
 	decrease_g_indent
 }
 
@@ -258,7 +258,7 @@ prepare_bootstrap_file() {
 	local TMP_COMPILE_WORKDIR
 	
 	BOOTSTRAP_FILE_PATH="$1";
-	OUTPUT_FILE_PATH="$1";
+	OUTPUT_FILE_PATH="$2";
 	
 	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
 	
@@ -266,11 +266,45 @@ prepare_bootstrap_file() {
    	
    	create_path_if_not_exists "$TMP_COMPILE_WORKDIR"
    	
-   	cp "$BOOTSTRAP_FILE_PATH" "$OUTPUT_FILE_PATH"
+   	cp "$BOOTSTRAP_FILE_PATH" "$OUTPUT_FILE_PATH""_tmp"
    	
-   	ensure_newline_at_end_of_file "$OUTPUT_FILE_PATH"
+   	ensure_newline_at_end_of_file "$OUTPUT_FILE_PATH""_tmp"
+   	
+   	remove_unwanted_lines_in_compilation "$OUTPUT_FILE_PATH""_tmp" "$OUTPUT_FILE_PATH"
 	
 	add_section_delimiter_at_start_of_file "$BOOTSTRAP_FILENAME" "$OUTPUT_FILE_PATH"
+	
+	remove_file_if_exists "$OUTPUT_FILE_PATH""_tmp"
+	
+	decrease_g_indent
+}
+
+prepare_fileentrypoint(){
+	local FILE_ENTRYPOINT_PATH
+	local FILE_ENTRYPOINT_NAME
+	local HANDLED_FILE_ENTRYPOINT_PATH
+	local TMP_COMPILE_WORKDIR
+	
+	FILE_ENTRYPOINT_PATH="$1"
+	HANDLED_FILE_ENTRYPOINT_PATH="$2"
+	
+	FILE_ENTRYPOINT_NAME="$( get_entrypoint_filename )"
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	
+	create_path_if_not_exists "$TMP_COMPILE_WORKDIR"
+	
+	increase_g_indent
+
+	cp "$FILE_ENTRYPOINT_PATH" "$HANDLED_FILE_ENTRYPOINT_PATH""_tmp"
+	
+	ensure_newline_at_end_of_file "$HANDLED_FILE_ENTRYPOINT_PATH""_tmp"
+	
+	remove_unwanted_lines_in_compilation "$HANDLED_FILE_ENTRYPOINT_PATH""_tmp" "$HANDLED_FILE_ENTRYPOINT_PATH"
+	
+	add_section_delimiter_at_start_of_file "$( basename $FILE_ENTRYPOINT_PATH )" "$HANDLED_FILE_ENTRYPOINT_PATH"
+	
+	remove_file_if_exists "$HANDLED_FILE_ENTRYPOINT_PATH""_tmp"
 	
 	decrease_g_indent
 }
@@ -295,29 +329,13 @@ add_section_delimiter_at_start_of_file() {
 	cat "$AUX_FILE_WITH_SEP" "$FILE_PATH""_addsectiontmp" > "$FILE_PATH"
 	
 	remove_file_if_exists "$FILE_PATH""_addsectiontmp" 
+	
+	remove_file_if_exists "$AUX_FILE_WITH_SEP"
 }
 
 get_handled_fileentrypoint_path() {
 	local FILE_ENTRY_POINT_PATH="$1"
 	echo "$TMP_COMPILE_WORKDIR/$(basename $FILE_ENTRYPOINT_PATH)"
-}
-
-prepare_fileentrypoint(){
-	local FILE_ENTRYPOINT_PATH
-	local FILE_ENTRYPOINT_NAME
-	
-	FILE_ENTRYPOINT_NAME="$( get_entrypoint_filename )"
-	FILE_ENTRYPOINT_PATH="$( get_entrypoint_filepath )"
-
-	create_file_separator "$FILE_ENTRYPOINT_PATH" "$FILE_WITH_SEPARATOR""_entrypoint"
-	
-	HANDLED_FILE_ENTRYPOINT_PATH=$( get_handled_fileentrypoint_path "$FILE_ENTRYPOINT_PATH" )
-	
-	cp "$FILE_ENTRYPOINT_PATH" "$HANDLED_FILE_ENTRYPOINT_PATH"
-	
-	ensure_newline_at_end_of_file "HANDLED_FILE_ENTRYPOINT_PATH"
-	
-	remove_problematic_lines_of_entryfile
 }
 
 ensure_newline_at_end_of_files() {
@@ -376,6 +394,7 @@ run_compile_app() {
 	FILE_WITH_SEPARATOR="$TMP_COMPILE_WORKDIR/separator"
 	FILE_WITH_BOOTSTRAP_SANITIZED="$TMP_COMPILE_WORKDIR/$BOOTSTRAP_FILENAME"
 	FILE_WITH_DEPS_SANITIZED="$TMP_COMPILE_WORKDIR/$DEPENDENCIES_FILENAME"
+	FILEENTRYPOINT_SANITIZED="$TMP_COMPILE_WORKDIR/""$( get_compiled_filename )"
 	
 	display_running_compiler_msg
 	
@@ -390,15 +409,13 @@ run_compile_app() {
 	prepare_dep_file "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME" "$FILE_WITH_DEPS_SANITIZED"
 	
 	prepare_bootstrap_file "$FILE_WITH_BOOTSTRAP_SANITIZED"
-		
-	prepare_fileentrypoint
 	
-	HANDLED_FILE_ENTRYPOINT_PATH=$( get_handled_fileentrypoint_path "$FILE_ENTRYPOINT_PATH" )
-
+	HANDLED_FILE_ENTRYPOINT_PATH=$( get_handled_fileentrypoint_path "$( basename "$FILE_ENTRYPOINT_PATH" )""/""$( get_compiled_filename )" )
+	prepare_fileentrypoint "$HANDLED_FILE_ENTRYPOINT_PATH" "$FILEENTRYPOINT_SANITIZED"
+	
 	shpm_log "- Generate compiled file ..."
 	
 	remove_file_if_exists "$COMPILED_FILE_PATH"
-	
 	
 	COMPILED_FILE_NAME=$( get_compiled_filename ) 	
 	COMPILED_FILE_PATH="$TARGET_DIR_PATH/$COMPILED_FILE_NAME"

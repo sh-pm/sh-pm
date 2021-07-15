@@ -314,6 +314,78 @@ test_prepare_source_code() {
 	remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
 }
 
+test_prepare_dep_file() {
+	local TMP_COMPILE_WORKDIR
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	DEP_FILE_PREPARED="$TMP_COMPILE_WORKDIR/$DEPENDENCIES_FILENAME"
+	
+	prepare_dep_file "$TEST_RESOURCES_DIR_PATH/prepare_dep_file_4test/$DEPENDENCIES_FILENAME" "$DEP_FILE_PREPARED"
+	
+	if [[ ! -d "$TMP_COMPILE_WORKDIR" ]]; then
+	  assert_fail "Folder $TMP_COMPILE_WORKDIR not found."
+	fi
+	
+	if [[ ! -f "$DEP_FILE_PREPARED" ]]; then
+	  assert_fail "File $DEP_FILE_PREPARED not found."
+	fi
+	
+	RESULT=$( diff "$DEP_FILE_PREPARED" "$TEST_RESOURCES_DIR_PATH/prepare_dep_file_expected/$DEPENDENCIES_FILENAME" )
+	assert_equals "$?" "0"
+	assert_equals "$RESULT" ""
+	
+	remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
+}
+
+test_prepare_bootstrap_file() {
+	local TMP_COMPILE_WORKDIR
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	BOOTSTRAP_PREPARED="$TMP_COMPILE_WORKDIR/$BOOTSTRAP_FILENAME"
+	
+	prepare_bootstrap_file "$TEST_RESOURCES_DIR_PATH/prepare_bootstrap_4test/$BOOTSTRAP_FILENAME" "$BOOTSTRAP_PREPARED"
+	
+	if [[ ! -d "$TMP_COMPILE_WORKDIR" ]]; then
+	  assert_fail "Folder $TMP_COMPILE_WORKDIR not found."
+	fi
+	
+	if [[ ! -f "$BOOTSTRAP_PREPARED" ]]; then
+	  assert_fail "File $BOOTSTRAP_PREPARED not found."
+	fi
+	
+	RESULT=$( diff "$BOOTSTRAP_PREPARED" "$TEST_RESOURCES_DIR_PATH/prepare_bootstrap_expected/$BOOTSTRAP_FILENAME" )
+	assert_equals "$?" "0"
+	assert_equals "$RESULT" ""
+	
+	remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
+}
+
+test_prepare_fileentrypoint() {
+	local TMP_COMPILE_WORKDIR
+	
+	TMP_COMPILE_WORKDIR=$( get_tmp_compilation_dir )
+	
+	FILE_ENTRYPOINT_NAME="$( get_entrypoint_filename )"
+	FILEENTRYPOINT_PREPARED="$TMP_COMPILE_WORKDIR/sh-pm.sh"
+	
+	echo "--> $TEST_RESOURCES_DIR_PATH/prepare_fileentrypoint_4test/$FILE_ENTRYPOINT_NAME|$FILEENTRYPOINT_PREPARED"
+	prepare_fileentrypoint "$TEST_RESOURCES_DIR_PATH/prepare_fileentrypoint_4test/$FILE_ENTRYPOINT_NAME" "$FILEENTRYPOINT_PREPARED"
+	
+	if [[ ! -d "$TMP_COMPILE_WORKDIR" ]]; then
+	  assert_fail "Folder $TMP_COMPILE_WORKDIR not found."
+	fi
+	
+	if [[ ! -f "$FILEENTRYPOINT_PREPARED" ]]; then
+	  assert_fail "File $FILEENTRYPOINT_PREPARED not found."
+	fi
+	
+	RESULT=$( diff "$FILEENTRYPOINT_PREPARED" "$TEST_RESOURCES_DIR_PATH/prepare_fileentrypoint_expected/sh-pm.sh" )
+	assert_equals "$?" "0"
+	assert_equals "$RESULT" ""
+	
+	remove_folder_if_exists "$TMP_COMPILE_WORKDIR"
+}
+
 __test_run_compile_app() {
 	local REPOSITORY
 	local DEP_ARTIFACT_ID
