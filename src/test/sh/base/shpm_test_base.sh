@@ -17,10 +17,10 @@ set_up(){
 tear_down() {
 	trap "" EXIT
 	#remove_file_and_folders_4tests 
-	restore_initial_env_before_tests 
+	restore_initial_env_after_tests 
 }
 
-restore_initial_env_before_tests() {
+restore_initial_env_after_tests() {
 	ROOT_DIR_PATH="$ACTUAL_ROOT_DIR_PATH"
 	LIB_DIR_PATH="$ACTUAL_LIB_DIR_PATH"
 	SRC_DIR_PATH="$ACTUAL_SRC_DIR_PATH"

@@ -139,7 +139,7 @@ remove_unwanted_lines_in_compilation() {
 	
 	#---------------------------------------
 	
-	PATTERN_INCLUDE_LIB_AND_FILE="include_lib\|include_file"
+	PATTERN_INCLUDE_LIB_AND_FILE="^[[:blank:]]*include_lib\|^[[:blank:]]*include_file"
 	PATTERN_SHEBANG_FIRST_LINE="#!/bin/bash\|#!/usr/bin/env bash"
 	
 	PATTERN_INCLUDE_BOOTSTRAP_FILE_1="source ./$BOOTSTRAP_FILENAME"
@@ -155,6 +155,42 @@ remove_unwanted_lines_in_compilation() {
 	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" < "$INPUT_FILE" \
 	| grep -v "$PATTERN_SHEBANG_FIRST_LINE" \
 	| grep -v "$PATTERN_INCLUDE_LIB_AND_FILE" \
+	| grep -v "$PATTERN_SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE" \
+	> "$OUTPUT_FILE"
+}
+
+remove_unwanted_lines_in_compilation_of_bootstrap() {
+	local INPUT_FILE="$1"
+	local OUTPUT_FILE="$2"
+	
+	local PATTERN_INCLUDE_LIB_AND_FILE
+	local PATTERN_SHEBANG_FIRST_LINE
+	
+	local PATTERN_INCLUDE_BOOTSTRAP_FILE_1
+	local PATTERN_INCLUDE_BOOTSTRAP_FILE_2
+	local PATTERN_INCLUDE_BOOTSTRAP_FILE
+	
+	local PATTERN_SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_1
+	local PATTERN_SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_2
+	local PATTERN_SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE
+	
+	#---------------------------------------
+	
+	#PATTERN_INCLUDE_LIB_AND_FILE="^[[:blank:]]*include_lib\|^[[:blank:]]*include_file"
+	PATTERN_SHEBANG_FIRST_LINE="#!/bin/bash\|#!/usr/bin/env bash"
+	
+	PATTERN_INCLUDE_BOOTSTRAP_FILE_1="source ./$BOOTSTRAP_FILENAME"
+	PATTERN_INCLUDE_BOOTSTRAP_FILE_2="source ../../../$BOOTSTRAP_FILENAME"
+	PATTERN_INCLUDE_BOOTSTRAP_FILE="$PATTERN_INCLUDE_BOOTSTRAP_FILE_1\|$PATTERN_INCLUDE_BOOTSTRAP_FILE_2"
+	
+	PATTERN_SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_1='source "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"'
+	PATTERN_SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_2='source "$ROOT_DIR_PATH/'"$DEPENDENCIES_FILENAME"
+	PATTERN_SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE="$PATTERN_SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_1\|$PATTERN_SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE_2"
+
+	#---------------------------------------
+	
+	grep -v "$PATTERN_INCLUDE_BOOTSTRAP_FILE" < "$INPUT_FILE" \
+	| grep -v "$PATTERN_SHEBANG_FIRST_LINE" \
 	| grep -v "$PATTERN_SOURCE_DEPSFILE_CMD_IN_BOOTSTRAP_FILE" \
 	> "$OUTPUT_FILE"
 }
@@ -270,7 +306,7 @@ prepare_bootstrap_file() {
    	
    	ensure_newline_at_end_of_file "$OUTPUT_FILE_PATH""_tmp"
    	
-   	remove_unwanted_lines_in_compilation "$OUTPUT_FILE_PATH""_tmp" "$OUTPUT_FILE_PATH"
+   	remove_unwanted_lines_in_compilation_of_bootstrap "$OUTPUT_FILE_PATH""_tmp" "$OUTPUT_FILE_PATH"
 	
 	add_section_delimiter_at_start_of_file "$BOOTSTRAP_FILENAME" "$OUTPUT_FILE_PATH"
 	
