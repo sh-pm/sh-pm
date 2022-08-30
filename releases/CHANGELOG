@@ -2,7 +2,7 @@
 v5.1.0
 ==============================================================================
 - Changes to align with the recommendations of:
-   * Google Style Guide for shell script (GCS);
+   * Google Style Guide for shell script (GCG);
    * ShellCheck (Scnnnn);
    * StackOverflow (SOV).    
 - Update bootstrap.sh file;    
