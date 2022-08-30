@@ -1,7 +1,27 @@
 ==============================================================================
+v5.1.0
+==============================================================================
+- Changes to align with the recommendations of:
+   * Google Style Guide for shell script (GCS);
+   * ShellCheck (Scnnnn);
+   * StackOverflow (SOV).    
+- Update bootstrap.sh file;    
+- Change dependencies filename; 
+- Artifacts prefix padronization.
+- Enhance documentation of dependencies and project expected structure
+- Update CHANGELOG file;
+
+==============================================================================
+v5.0.0
+==============================================================================
+- Split monolitic unique src file/code in many src files;
+- Create a test file for each src file;
+- Create unit tests for functions;
+- Fixes and enhancements.
+
+==============================================================================
 v4.0.0
 ==============================================================================
-
 - ShellCheck revision in all code;
 - sh-pm pass use shellcheck if it exists when run tests;
 - Update pass to use only git repositories;
@@ -18,7 +38,7 @@ V3.3.0
 ==============================================================================
 V3.0.5
 ==============================================================================
-- Enhancement in pom.sh template
+- Enhancement in dependencies file template
    * Add default group ID
 
 ==============================================================================
