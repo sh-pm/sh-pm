@@ -26,7 +26,7 @@ restore_initial_env_after_tests() {
 	SRC_DIR_PATH="$ACTUAL_SRC_DIR_PATH"
 	TARGET_DIR_PATH="$ACTUAL_TARGET_DIR_PATH"
 	
-	source "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME"
+	. "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME"
 }
 
 remove_file_and_folders_4tests() {
@@ -67,7 +67,7 @@ change_execution_to_project() {
 	SRC_RESOURCES_DIR_PATH="$ROOT_DIR_PATH/$SRC_RESOURCES_DIR_SUBPATH"
 	TEST_RESOURCES_DIR_PATH="$ROOT_DIR_PATH/$TEST_RESOURCES_DIR_SUBPATH"
 	
-	source "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" || echo "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME not exists" 
+	. "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME" || echo "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME not exists" 
 	# -- -----------------------------------------------------------------------------
 }
 
@@ -83,6 +83,6 @@ undo_change_execution_to_project() {
 	SRC_RESOURCES_DIR_PATH="$ACTUAL_SRC_RESOURCES_DIR_SUBPATH"
 	TEST_RESOURCES_DIR_PATH="$ACTUAL_TEST_RESOURCES_DIR_SUBPATH"
 	
-	source "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME"
+	. "$ROOT_DIR_PATH/$BOOTSTRAP_FILENAME"
 	#-----------------------------------------------------------------------------------
 }

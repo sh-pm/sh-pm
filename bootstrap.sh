@@ -3,9 +3,20 @@
 # =================================
 # Internal Log
 # =================================
+# ---------------------------------
+# Enable/Disable internal log utility for dev debug purposes, 
+# BUT without create circular dependency between bootstrap.sh.
+# and sh-logger library; 
+# Globals:
+#   None
+# Arguments:
+#   $1 - text to be logged in dev debug of bootstrap.sh
+# ---------------------------------
 internal_debug() {
-	local ENABLE_DEBUG="false"
-	if [[ "$ENABLE_DEBUG" == "true" ]]; then
+	local enable_debug
+	enable_debug="false"
+	
+	if [[ "$enable_debug" == "true" ]]; then
 		echo "$1"
 	fi
 }
@@ -13,85 +24,83 @@ internal_debug() {
 # =================================
 # Mandatory Global Variables
 # =================================
-# -- bootstrap file name ----------
+# -- bootstrap file name: name of this file -----
 BOOTSTRAP_FILENAME="$(basename "${BASH_SOURCE[0]}")"
+export BOOTSTRAP_FILENAME
 
 # -- dependencies file name ----------
-DEPENDENCIES_FILENAME="pom.sh"
+export DEPENDENCIES_FILENAME="deps.sh"
 
 # -- "Boolean's" ------------------
-TRUE=0
-FALSE=1
+export readonly TRUE=0
+export readonly FALSE=1
 
 # -- Test Coverage ----------------
-MIN_PERCENT_TEST_COVERAGE=80
+export MIN_PERCENT_TEST_COVERAGE=80
 
 # -- Main SubPath's ---------------
 if [[ -z "$SRC_DIR_SUBPATH" ]]; then
-	SRC_DIR_SUBPATH="src/main/sh"
+	export SRC_DIR_SUBPATH="src/main/sh"
 fi
 
 if [[ -z "$SRC_RESOURCES_DIR_SUBPATH" ]]; then
-	SRC_RESOURCES_DIR_SUBPATH="src/main/resources"
+	export SRC_RESOURCES_DIR_SUBPATH="src/main/resources"
 fi
 
 if [[ -z "$LIB_DIR_SUBPATH" ]]; then
-	LIB_DIR_SUBPATH="src/lib/sh"
+	export LIB_DIR_SUBPATH="src/lib/sh"
 fi
 
 if [[ -z "$TEST_DIR_SUBPATH" ]]; then
-	TEST_DIR_SUBPATH="src/test/sh"
+	export TEST_DIR_SUBPATH="src/test/sh"
 fi
 
 if [[ -z "$TEST_RESOURCES_DIR_SUBPATH" ]]; then
-	TEST_RESOURCES_DIR_SUBPATH="src/test/resources"
+	export TEST_RESOURCES_DIR_SUBPATH="src/test/resources"
 fi
 
 if [[ -z "$TARGET_DIR_SUBPATH" ]]; then
-	TARGET_DIR_SUBPATH="target"
+	export TARGET_DIR_SUBPATH="target"
 fi
 
 # -- Main Path's ------------------
 if [[ -z "$ROOT_DIR_PATH" ]]; then
 	THIS_SCRIPT_FOLDER_PATH="$( dirname "$(realpath "${BASH_SOURCE[0]}")" )"
-	ROOT_DIR_PATH="${THIS_SCRIPT_FOLDER_PATH//$SRC_DIR_SUBPATH/}"		
+	export THIS_SCRIPT_FOLDER_PATH
+	
+	ROOT_DIR_PATH="${THIS_SCRIPT_FOLDER_PATH//$SRC_DIR_SUBPATH/}"
+	export ROOT_DIR_PATH
+			
 	internal_debug "ROOT_DIR_PATH: $ROOT_DIR_PATH"
 fi
 
 if [[ -z "$SRC_RESOURCES_DIR_PATH" ]]; then
-	SRC_RESOURCES_DIR_PATH="$ROOT_DIR_PATH/$SRC_RESOURCES_DIR_SUBPATH"
+	export SRC_RESOURCES_DIR_PATH="$ROOT_DIR_PATH/$SRC_RESOURCES_DIR_SUBPATH"
 	internal_debug "SRC_RESOURCES_DIR_PATH: $SRC_RESOURCES_DIR_PATH"
 fi
 
 if [[ -z "$SRC_DIR_PATH" ]]; then
-	SRC_DIR_PATH="$ROOT_DIR_PATH/$SRC_DIR_SUBPATH"
+	export SRC_DIR_PATH="$ROOT_DIR_PATH/$SRC_DIR_SUBPATH"
 	internal_debug "SRC_DIR_PATH: $SRC_DIR_PATH"
 fi
 
 if [[ -z "$LIB_DIR_PATH" ]]; then
-	LIB_DIR_PATH="$ROOT_DIR_PATH/$LIB_DIR_SUBPATH"
+	export LIB_DIR_PATH="$ROOT_DIR_PATH/$LIB_DIR_SUBPATH"
 	internal_debug "LIB_DIR_PATH: $LIB_DIR_PATH"
 fi
 
 if [[ -z "$TEST_DIR_PATH" ]]; then
-	TEST_DIR_PATH="$ROOT_DIR_PATH/$TEST_DIR_SUBPATH"
+	export TEST_DIR_PATH="$ROOT_DIR_PATH/$TEST_DIR_SUBPATH"
 	internal_debug "TEST_DIR_PATH: $TEST_DIR_PATH"
-	
-	FOLDERNAME_4TEST="folder4test"
-	FILENAME_4TEST="file4test"
-	PROJECTNAME_4TEST="sh-project-only-4tests"	
-	PROJECTVERSION_4TEST="v0.2.0"
-	NEWBRANCH_4TEST="newbranch4test"
-	CHANGELOG_4TEST="changelog4test"
 fi
 
 if [[ -z "$TEST_RESOURCES_DIR_PATH" ]]; then
-	TEST_RESOURCES_DIR_PATH="$ROOT_DIR_PATH/$TEST_RESOURCES_DIR_SUBPATH"
+	export TEST_RESOURCES_DIR_PATH="$ROOT_DIR_PATH/$TEST_RESOURCES_DIR_SUBPATH"
 	internal_debug "TEST_RESOURCES_DIR_PATH: $TEST_RESOURCES_DIR_PATH"
 fi
 
 if [[ -z "$TARGET_DIR_PATH" ]]; then
-	TARGET_DIR_PATH="$ROOT_DIR_PATH/$TARGET_DIR_SUBPATH"
+	export TARGET_DIR_PATH="$ROOT_DIR_PATH/$TARGET_DIR_SUBPATH"
 	internal_debug "TARGET_DIR_PATH: $TARGET_DIR_PATH"
 fi
 
@@ -99,30 +108,45 @@ if [[ -z "$TMP_DIR_PATH" ]]; then
     # WARNING: Used in 
     #   - secure rm -rf executions
     #   - unit tests
-	TMP_DIR_PATH="/tmp"
+	export TMP_DIR_PATH="/tmp"
 	internal_debug "TMP_DIR_PATH: $TMP_DIR_PATH"
 	
 fi
 
+if [[ -z "$STDOUT_REDIRECT_FILEPATH_4TEST" ]]; then
+	export STDOUT_REDIRECT_FILENAME_4TEST="stdout_redirect_4test"
+	export ENABLE_STDOUT_REDIRECT_4TEST="$FALSE"
+
+	export STDOUT_REDIRECT_FILEPATH_4TEST="$TMP_DIR_PATH/$STDOUT_REDIRECT_FILENAME_4TEST"
+fi
+
+# -- files, folders, branchs, etc for unit tests -------------------
+export FOLDERNAME_4TEST="folder4test"
+export FILENAME_4TEST="file4test"
+export PROJECTNAME_4TEST="sh-project-only-4tests"	
+export PROJECTVERSION_4TEST="v0.2.0"
+export NEWBRANCH_4TEST="newbranch4test"
+export CHANGELOG_4TEST="changelog4test"
+
 # -- manifest file -------------------
-MANIFEST_FILENAME="manifest"
-MANIFEST_FILE_PATH="$SRC_RESOURCES_DIR_PATH/$MANIFEST_FILENAME"
-MANIFEST_P_ENTRY_POINT_FILE="entry_point_file"
-MANIFEST_P_ENTRY_POINT_FUNCTION="entry_point_function"
+export MANIFEST_FILENAME="manifest"
+export MANIFEST_FILE_PATH="$SRC_RESOURCES_DIR_PATH/$MANIFEST_FILENAME"
+export MANIFEST_P_ENTRY_POINT_FILE="entry_point_file"
+export MANIFEST_P_ENTRY_POINT_FUNCTION="entry_point_function"
 
 # =================================
 # echo -e colors
 # =================================
-ECHO_COLOR_ESC_CHAR='\033'
-ECHO_COLOR_RED=$ECHO_COLOR_ESC_CHAR'[0;31m'
-ECHO_COLOR_YELLOW=$ECHO_COLOR_ESC_CHAR'[0;93m'
-ECHO_COLOR_GREEN=$ECHO_COLOR_ESC_CHAR'[0;32m'	
-ECHO_COLOR_NC=$ECHO_COLOR_ESC_CHAR'[0m' # No Color
+export ECHO_COLOR_ESC_CHAR='\033'
+export ECHO_COLOR_RED=$ECHO_COLOR_ESC_CHAR'[0;31m'
+export ECHO_COLOR_YELLOW=$ECHO_COLOR_ESC_CHAR'[0;93m'
+export ECHO_COLOR_GREEN=$ECHO_COLOR_ESC_CHAR'[0;32m'	
+export ECHO_COLOR_NC=$ECHO_COLOR_ESC_CHAR'[0m' # No Color
 
 # =================================
 # Load dependencies
 # =================================
-source "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"
+. "$ROOT_DIR_PATH/$DEPENDENCIES_FILENAME"
 
 # =================================
 # Include Management Libs and Files
@@ -140,60 +164,84 @@ if [[ -z ${FILES_INCLUDED+x}  ]]; then
 	);
 fi
 
+# ---------------------------------
+# Include all files of a library
+# Depend of function include_file.
+#
+# Globals:
+#   DEPS_INCLUDED
+# Arguments:
+#   $1 - Name of library to be included
+# ---------------------------------
 function include_lib () {
     
-    LIB_TO_INCLUDE=$1
+    local lib_to_include
+    
+    lib_to_include="$1"
     
     # Sanitize param
-	if [[ -z "$LIB_TO_INCLUDE" ]]; then
-		echo "Could't perform include_lib: function receive empty param."
-		exit 1001
+	if [[ -z "$lib_to_include" ]]; then
+		echo "(ER0002) Could't perform include_lib: function receive empty param." >&2
+		exit 1
 	fi
 	
 	# Validate include
 	# Include library only one time
-	if [[ ! -z "${DEPS_INCLUDED[$LIB_TO_INCLUDE]}" ]]; then
-		internal_debug "include_lib: lib $LIB_TO_INCLUDE already included."
+	if [[ -n "${DEPS_INCLUDED[$lib_to_include]}" ]]; then
+		internal_debug "include_lib: lib $lib_to_include already included."
 	fi
 	
-	local DEP_VERSION=$( echo "${DEPENDENCIES[$LIB_TO_INCLUDE]}" | cut -d "@" -f 1 | xargs ) #xargs is to trim string!	
-	local DEP_FOLDER_PATH="$LIB_DIR_PATH/$LIB_TO_INCLUDE""-""$DEP_VERSION"
+	local dep_version
+	dep_version=$( echo "${DEPENDENCIES[$lib_to_include]}" | cut -d "@" -f 1 | xargs ) #xargs is to trim string!
+		
+	local dep_folder_path
+	dep_folder_path="$LIB_DIR_PATH/$lib_to_include""-""$dep_version"
 	
-	if [[ ! -d "$DEP_FOLDER_PATH" ]]; then
-		echo "Could't perform include_lib: $LIB_TO_INCLUDE not exists in local $LIB_DIR_PATH repository"
-		exit 1002
+	if [[ ! -d "$dep_folder_path" ]]; then
+		echo "(ER0003) Could't perform include_lib: $lib_to_include not exists in local $LIB_DIR_PATH repository." >&2
+		exit 1
 	fi
 	
-	for SH_FILE in "$LIB_DIR_PATH/$LIB_TO_INCLUDE""-""$DEP_VERSION"/*; do
-	    if [[ "$(basename "$SH_FILE")" != "$DEPENDENCIES_FILENAME" && "$(basename "$SH_FILE")" != "$BOOTSTRAP_FILENAME" ]]; then
-			include_file "$SH_FILE" 
+	for sh_file in "$LIB_DIR_PATH/$lib_to_include""-""$dep_version"/*; do
+	    if [[ "$(basename "$sh_file")" != "$DEPENDENCIES_FILENAME" && "$(basename "$sh_file")" != "$BOOTSTRAP_FILENAME" ]]; then
+			include_file "$sh_file" 
 		else
-	        internal_debug "$SH_FILE NOT included" 
+	        internal_debug "$sh_file NOT included" 
 		fi
 	done
 	
-	DEPS_INCLUDED[$LIB_TO_INCLUDE]=$TRUE
+	DEPS_INCLUDED[$lib_to_include]=$TRUE
 }
 
+# ---------------------------------
+# Include the file in absolute path received as param.
+#
+# Globals:
+#   DEPS_INCLUDED
+# Arguments:
+#   $1 - absolute path to the file to be included
+# ---------------------------------
 function include_file () {
     
-    FILEPATH_TO_INCLUDE=$1
+    local filepath_to_include
+    
+    filepath_to_include="$1"
     
     # Sanitize param
-	if [[ -z "$FILEPATH_TO_INCLUDE" ]]; then
-		echo "Could't perform include_file: function receive empty param."
-		exit 1003
+	if [[ -z "$filepath_to_include" ]]; then
+		echo "(ER0001) Could't perform include_file: function receive empty param." >&2
+		exit 1
 	fi
 	
 	# Validate include
 	# Include file only one time
-	if [[ ! -z "${FILES_INCLUDED[$FILEPATH_TO_INCLUDE]}" ]]; then
-		internal_debug "$FILEPATH_TO_INCLUDE already included."
+	if [[ -n "${FILES_INCLUDED[$filepath_to_include]}" ]]; then
+		internal_debug "$filepath_to_include already included."
 	else 
-		source "$FILEPATH_TO_INCLUDE"
+		. "$filepath_to_include"
 		
-		FILES_INCLUDED[$FILEPATH_TO_INCLUDE]=$TRUE
+		FILES_INCLUDED[$filepath_to_include]="$TRUE"
 		
-	    internal_debug "$FILEPATH_TO_INCLUDE included"	
+	    internal_debug "$filepath_to_include included"	
 	fi	
 }

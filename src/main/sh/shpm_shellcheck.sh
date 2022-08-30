@@ -1,12 +1,12 @@
 run_shellcheck() {
-    local SHELLCHECK_CMD
-    local SHELLCHECK_LOG_FILENAME
-    local GEDIT_CMD
+    local shellcheck_cmd
+    local shellcheck_log_filename
+    local gedit_cmd
     
-    SHELLCHECK_CMD=$(which shellcheck)
-    SHELLCHECK_LOG_FILENAME="shellcheck.log"
+    shellcheck_cmd=$(which shellcheck)
+    shellcheck_log_filename="shellcheck.log"
     
-    GEDIT_CMD=$(which gedit)
+    gedit_cmd=$(which gedit)
 
 	shpm_log_operation "Running ShellCheck in .sh files ..."
     
@@ -17,24 +17,24 @@ run_shellcheck() {
     	return "$TRUE" # continue execution with warning    	
     fi
     
-    if [[ ! -z "$SHELLCHECK_CMD" ]]; then
+    if [[ ! -z "$shellcheck_cmd" ]]; then
 	    
 	    create_path_if_not_exists "$TARGET_DIR_PATH"
 	    
 	    for FILE_TO_CHECK in $SRC_DIR_PATH/*.sh; do        
 	    
-	    	if "$SHELLCHECK_CMD" -x -e SC1090 -e SC1091 "$FILE_TO_CHECK" > "$TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME"; then	    	
+	    	if "$shellcheck_cmd" -x -e SC1090 -e SC1091 "$FILE_TO_CHECK" > "$TARGET_DIR_PATH/$shellcheck_log_filename"; then	    	
 	    		shpm_log "$FILE_TO_CHECK passed in shellcheck" "green"
 	    	else
 	    		shpm_log "FAIL!" "red"
 	    		shpm_log "$FILE_TO_CHECK have shellcheck errors." "red"
-	    		shpm_log "See log in $TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME" "red"
+	    		shpm_log "See log in $TARGET_DIR_PATH/$shellcheck_log_filename" "red"
 	    		
-	    		sed -i '1s/^/=== ERRORS FOUND BY ShellCheck tool: === /' "$TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME"
+	    		sed -i '1s/^/=== ERRORS FOUND BY ShellCheck tool: === /' "$TARGET_DIR_PATH/$shellcheck_log_filename"
 	    		
-	    		if [[ "$GEDIT_CMD" != "" ]]; then
-	    			shpm_log "Open $TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME ..."
-	    			"$GEDIT_CMD" "$TARGET_DIR_PATH/$SHELLCHECK_LOG_FILENAME"
+	    		if [[ "$gedit_cmd" != "" ]]; then
+	    			shpm_log "Open $TARGET_DIR_PATH/$shellcheck_log_filename ..."
+	    			"$gedit_cmd" "$TARGET_DIR_PATH/$shellcheck_log_filename"
 	    		fi
 	    		
 	    		exit 1

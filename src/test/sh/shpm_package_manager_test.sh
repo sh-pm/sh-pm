@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source ../../../bootstrap.sh
+. ../../../bootstrap.sh
 
 include_lib sh-unit
 include_file "$TEST_DIR_PATH/base/shpm_test_base.sh"

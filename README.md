@@ -22,18 +22,21 @@ Supose you want use log's.
 Don't create code for this, because already exists log function's in dependency called **sh-logger**.
 Let's go download and use it in your project:
 
-1) Open *pom.sh* and insert dependency lib containg reusable code: 
+1) Open *deps.sh* and insert dependency lib containg reusable code: 
+
 ```
 declare -A DEPENDENCIES=( \
 	[sh-logger]=v1.4.0@github.com/sh-pm \
 );
 ```
 OBS: In multiline command's don't put spaces before \ character: it will cause errors similar below:
+
 ```
-(...)/pom.sh: line 5: DEPENDENCIES: \ : must use subscript when assigning associative array
+(...)/deps.sh: line 5: DEPENDENCIES: \ : must use subscript when assigning associative array
 ```
 
 2) Run shpm update to download dependency lib with reusable code from GitHub
+
 ```
 $ ./shpm.sh update
 ```
@@ -41,6 +44,7 @@ The command will download and extract dependency to local sh-pm repository locat
 
 3) Include dependency lib in file(s) and use reusable code
 Example:
+
 ```
 #!/usr/bin/env bash
 source ../../../bootstrap.sh
@@ -57,7 +61,8 @@ log_warn "Hello World SH-PM: test show some warning log text" # log_warn is a re
 Supose you want force user to pass params to your script.
 Don't create function's for this, because already exists a dependency called **sh-commons** containing many common utilitary functions.
 
-1) Open *pom.sh* and insert dependency lib containg reusable code: 
+1) Open *deps.sh* and insert dependency lib containg reusable code: 
+
 ```
 declare -A DEPENDENCIES=( \
 	[sh-logger]=v1.4.0@github.com/sh-pm \
@@ -65,11 +70,13 @@ declare -A DEPENDENCIES=( \
 );
 ```
 OBS: In multiline command's don't put spaces before \ character: it will cause errors similar below:
+
 ```
-(...)/pom.sh: line 5: DEPENDENCIES: \ : must use subscript when assigning associative array
+(...)/deps.sh: line 5: DEPENDENCIES: \ : must use subscript when assigning associative array
 ```
 
 2) Run shpm update to download dependency lib with reusable code from GitHub
+
 ```
 $ ./shpm.sh update
 ```
@@ -77,6 +84,7 @@ The command will download and extract dependency to local sh-pm repository locat
 
 3) Include dependency lib in file(s) and use reusable code
 Example: Let's force user to pass exactly 1 param to script
+
 ```
 #!/usr/bin/env bash
 source ../../../bootstrap.sh
@@ -129,17 +137,18 @@ Download the <b>last version</b> <a href="https://github.com/sh-pm/sh-pm/tree/ma
 After download, extract the 3 files inside a **.tar.gz** to root folder of your project.
 After this step, in your root folder will be add the 3 shell script files: 
  - **bootstrap.sh**: Create environment variables to help standardize path's;
- - **pom.sh**: identify your project and dependencies to be used;
+ - **deps.sh**: identify your project and dependencies to be used;
  - **shpm.sh**: is SH-PM itself.
 
 #### Step 3 – Name your project
 
-Open shell script file pom.sh and inform in **ARTIFACT_ID** the name of your project. 
+Open shell script file **deps.sh** and inform in **ARTIFACT_ID** the name of your project. 
 This file contain all dependencies to be used in your project.
 
 #### Step 4 – Update dependencies
 
 Using a terminal, inside root folder of your project, perform a command 
+
 ```
   $ ./shpm.sh update
 ```
@@ -149,6 +158,7 @@ After update, dependencies will be available for use in your shell scripts.
 #### Step 5 – Init expected structure
 
 SH-PM expects you to store scripts, tests and dependencies in separate folders. Perform a command:
+
 ```
 $ ./shpm.sh init
 ```
